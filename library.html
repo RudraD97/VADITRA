@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+        }
+        .glass-panel {
+            background: rgba(30, 32, 31, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px)
+        }
+        .grain-overlay {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            opacity: 0.02;
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAgfTlrLD2QxJxYr3xpKxwpOeFTn4RGwuioDaF45TMQijZTdXBWQADlYV4joPCIT5gSRzlpafBCBfFbWu_YtHpyg4bKX3dTgtg4quV5rHacR6txnlc2o2XSp6nyB6Oo4q5LQwoT5joBWxDDh61szb1aI3sWVypQn7k4V7X5zHcRhSq33S2MGOWu4jJcwgLOX9FSYCKnaKqc1XoICp6miY-35RyfHLMLlma0qHto1LwoKQuKxwmhGQd_j4Dp94f8VLe2YYfttYAn_HcW)
+        }
+        .active-glow {
+            box-shadow: 0 4px 24px -12px rgba(174, 211, 102, 0.2)
+        }
+        ::-webkit-scrollbar {
+            width: 0;
+            background: transparent
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#243600",
+                        "on-secondary-fixed": "#151d19",
+                        "on-secondary": "#29322d",
+                        "outline": "#8e9380",
+                        "on-primary-fixed": "#141f00",
+                        "surface-tint": "#aed366",
+                        "primary-container": "#c9f07e",
+                        "error": "#ffb4ab",
+                        "surface-container": "#1e201f",
+                        "surface-bright": "#383a38",
+                        "on-secondary-fixed-variant": "#404943",
+                        "background": "#121413",
+                        "surface-dim": "#121413",
+                        "on-surface-variant": "#c4c9b5",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#1a1c1b",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#2f3130",
+                        "primary-fixed": "#c9f07e",
+                        "on-surface": "#e2e3e0",
+                        "primary-fixed-dim": "#aed366",
+                        "tertiary-container": "#e1e3e1",
+                        "on-tertiary": "#2e3130",
+                        "surface-container-high": "#282a29",
+                        "tertiary-fixed": "#e1e3e1",
+                        "secondary": "#bfc9c2",
+                        "tertiary-fixed-dim": "#c5c7c5",
+                        "inverse-primary": "#496800",
+                        "secondary-fixed-dim": "#bfc9c2",
+                        "surface": "#121413",
+                        "secondary-fixed": "#dbe5dd",
+                        "surface-variant": "#333534",
+                        "on-primary-fixed-variant": "#364e00",
+                        "on-primary-container": "#4f6e04",
+                        "surface-container-lowest": "#0d0f0e",
+                        "on-tertiary-fixed-variant": "#444746",
+                        "surface-container-highest": "#333534",
+                        "on-background": "#e2e3e0",
+                        "primary": "#ffffff",
+                        "inverse-surface": "#e2e3e0",
+                        "on-error": "#690005",
+                        "tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#191c1b",
+                        "outline-variant": "#444939",
+                        "on-tertiary-container": "#626563",
+                        "on-secondary-container": "#aeb7b0",
+                        "secondary-container": "#404943",
+                        "sage-accent": "#aed366"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-margin-mobile": "20px",
+                        "container-margin-desktop": "64px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "section-gap": "80px",
+                        "nav-height": "72px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Syne"],
+                        "headline-lg-mobile": ["Syne"],
+                        "headline-md": ["Syne"],
+                        "body-md": ["Inter"],
+                        "display-md": ["Syne"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Syne"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-md": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden selection:bg-sage-accent/30">
+<div class="grain-overlay"></div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-2xl flex justify-between items-center h-nav-height px-container-margin-mobile border-b border-outline-variant/10">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface hover:text-sage-accent transition-colors active:scale-95 duration-200">menu</button>
+<h1 class="font-display-lg text-2xl tracking-tighter text-on-surface uppercase italic">VADITRA</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20 active:scale-95 transition-transform">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI9oPdPl81vfKFeCe3Dh-OtWgvA_ZsHssUb96kTkVLPPEzv0U6H6s01Sjfo32TGpT5pnLry-pl_hww0He86-xPttOSio5fnMuFsaGvCXUg7ylxG_ASbfbON7KlzDdcHiI8D9FoL9cDzltGYfFk42a0UEEyOxd39QLl0SHkfnuiLSTfoMP1ZtRS8TQboyL8GCSBcom39-_limn7VheWdtmvWRFURHDrw_lb4h-qWrWAQIUFEXxmuivGGN2JmeQAgOv40hT1VL0iE5HB"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-28 pb-44 px-container-margin-mobile max-w-3xl mx-auto min-h-screen">
+<div class="flex justify-between items-end mb-10">
+<div>
+<h2 class="font-display-md text-3xl text-on-surface">Your Library</h2>
+<p class="text-on-surface-variant font-label-md mt-1">12 curated playlists</p>
+</div>
+<button class="flex items-center justify-center w-14 h-14 bg-sage-accent text-on-primary rounded-full active:scale-90 transition-all shadow-xl shadow-sage-accent/20">
+<span class="material-symbols-outlined font-bold">add</span>
+</button>
+</div>
+<!-- Playlist List with Increased Whitespace -->
+<div class="space-y-6">
+<!-- Active Playlist -->
+<div class="group relative flex items-center p-4 bg-surface-container border border-sage-accent/30 rounded-xl active-glow active:scale-[0.98] transition-all duration-300 cursor-pointer">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="Abstract minimalist photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnOScocNBfJHzHoOawNBgFg9S8nEgyX6olAaH7V-6pU_-arubBZTD1tRJ32GeY3AL-FjMYhMxFvg_DPEWvbnPZKz9YVLrz-AlHLgMaz6slCoXdzYJgC5Jl0o_o990pxdPsjaaCxx1Iz8Xx7H7jwxFtdbn2TgmLR2N-jQ8jUS6oTRJvERozLQ4Ntz810hLptMqf52j_Qipy4dbVe1gitaq3jYj1sho3I-9d7lWPEDRgfzpJkQE0g-chgsBAF1jx2MNCSaBM1QomLg5n"/>
+</div>
+<div class="ml-5 flex-grow">
+<h3 class="font-headline-md text-sage-accent truncate text-xl">Midnight Theory</h3>
+<p class="text-on-surface-variant font-label-sm mt-1 tracking-widest uppercase">48 TRACKS • BY YOU</p>
+</div>
+<div class="flex items-center text-sage-accent pr-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+</div>
+</div>
+<!-- Playlist Item 2 -->
+<div class="group relative flex items-center p-4 bg-surface-container-low/40 hover:bg-surface-container border border-outline-variant/10 rounded-xl active:scale-[0.98] transition-all duration-300 cursor-pointer">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="Vintage turntable" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4j2_UZskY_bThMz1A49FAYrh1OCUwa4LyjXiYqsTXbrWBfp2TiQ3Tz60JZIOIEMzC1thbm1mKzVjawCDW5SbcCmjLnLN9qboVavXJEd0gAnnnrDGyuw4MjHcFxsLRxE3CYUpxVmar8TlXEyA-cdImY3NiZJvHcCbFCIXOEFBJeU9cZN1OIB-Mrwbml_svtg_Nnw7G7cIeavU7MznXZZjoqcO1Ie_9PoOu7WVXfgxFt2qxNy1pL28pgLjPrVaeXQ3ISrsGAZtLat4T"/>
+</div>
+<div class="ml-5 flex-grow">
+<h3 class="font-headline-md text-on-surface group-hover:text-sage-accent transition-colors truncate text-xl">Architectural Beats</h3>
+<p class="text-on-surface-variant font-label-sm mt-1 tracking-widest uppercase">124 TRACKS • BY VADITRA</p>
+</div>
+<div class="text-on-surface-variant/40 pr-2">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+<!-- Playlist Item 3 -->
+<div class="group relative flex items-center p-4 bg-surface-container-low/40 hover:bg-surface-container border border-outline-variant/10 rounded-xl active:scale-[0.98] transition-all duration-300 cursor-pointer">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="Scandinavian pine forest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSZhuef0_Bh-Mv6G-QuqlxF6yyjz5vRmZvVAYmk63KTeDglaRlba_O6VbxBEDr05aQXQdauJ_VdogB7NOfmkzgnW7Vofll3KrLvolwKcfUw7UttSMa-AbXkLEHQnqT6YICfCgF0GSqNZwBliGOoXg9rwCHAF36gD07-BhU_F2BroKBGNgdrV43TIyydyA89psubP6zTOgb4zhzHmNhMYBBjipQHnJzLM72RJGxx3oVwCR3w9dvi57MFiS0bKG4YA2Amz2zZd0AlYQX"/>
+</div>
+<div class="ml-5 flex-grow">
+<h3 class="font-headline-md text-on-surface group-hover:text-sage-accent transition-colors truncate text-xl">Fjord Echoes</h3>
+<p class="text-on-surface-variant font-label-sm mt-1 tracking-widest uppercase">32 TRACKS • BY YOU</p>
+</div>
+<div class="text-on-surface-variant/40 pr-2">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+<!-- Playlist Item 4 -->
+<div class="group relative flex items-center p-4 bg-surface-container-low/40 hover:bg-surface-container border border-outline-variant/10 rounded-xl active:scale-[0.98] transition-all duration-300 cursor-pointer">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="Minimalist digital art" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8fo54dUoRJtLu9if-PnPDaLK2S2SiYXH8d4fHlUHDgIm7Csbi-WXz85ZVvjKhenbwMQLPc1RgpGt9Z8tFm2bUY33xi9jHe9icWQfl1HuEUOKEJJA4JLV3qItsm0DmnO3aPhoVfZ7J70avuVsLFslQitEukqR1YK_D8aiczd_IW4jMQE5r1SRjd4-e1s3memegSaDDR_RQrCGxkDnEGAcHN2JMWphiRK6yC5Q5SmQ_zFSazfs6DF8Diu_t-nmHYMN_7_00CGjj3hyP"/>
+</div>
+<div class="ml-5 flex-grow">
+<h3 class="font-headline-md text-on-surface group-hover:text-sage-accent transition-colors truncate text-xl">Deep Focus Logic</h3>
+<p class="text-on-surface-variant font-label-sm mt-1 tracking-widest uppercase">215 TRACKS • BY VADITRA</p>
+</div>
+<div class="text-on-surface-variant/40 pr-2">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Persistent Mini Player -->
+<div class="fixed bottom-[72px] left-0 w-full z-40 px-3 pointer-events-none transition-transform duration-500">
+<div class="pointer-events-auto max-w-3xl mx-auto h-[68px] bg-surface-container-highest/90 backdrop-blur-2xl border border-outline-variant/20 rounded-xl shadow-2xl flex items-center px-4 gap-4">
+<div class="w-12 h-12 rounded overflow-hidden bg-surface-variant shadow-lg">
+<img class="w-full h-full object-cover" data-alt="Album art" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNK3NRJv-BhFBrTjnnF9mQEP0HuM2Kc4mTbF_r6SlQOw_pPb_aDLbqDUZPbqjY_HD42OGrh7_vgIlHi2Qeiw-wLglh4qGg2vJYDF7-KCXcUao8OJaTr9gt4z1w4KhOqf9WVFnbqit_R0MxJntGjxxw8loC1nBczt4BoOOOG4VIJNle5CRVlG5dnQ2soDYxKUvuYUKDE-aupgxiKdY8M5CouguT361oExkqsMvci7_cZcg_R-P66LaTlsumGkjFe9E5arXwM5o_7o6F"/>
+</div>
+<div class="flex-grow overflow-hidden">
+<div class="text-on-surface font-bold truncate">Aural Sculptures</div>
+<div class="text-sage-accent font-label-sm truncate">Lusine • Midnight Theory</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-sage-accent transition-colors">
+<span class="material-symbols-outlined">skip_previous</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-sage-accent" id="playPauseBtn">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">pause_circle</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-sage-accent transition-colors">
+<span class="material-symbols-outlined">skip_next</span>
+</button>
+</div>
+<!-- Subtle Progress Bar -->
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-white/5 overflow-hidden rounded-b-xl">
+<div class="h-full bg-sage-accent transition-all duration-300" id="progressFill" style="width: 35%;"></div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-height bg-surface/95 backdrop-blur-2xl border-t border-outline-variant/10 flex justify-around items-center px-gutter pb-safe">
+<button class="flex flex-col items-center justify-center text-sage-accent group">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">library_music</span>
+<span class="font-label-sm mt-1">Library</span>
+<div class="w-1 h-1 bg-sage-accent rounded-full mt-0.5"></div>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface/50 hover:text-sage-accent transition-all active:scale-90">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-sm mt-1">Search</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface/50 hover:text-sage-accent transition-all active:scale-90">
+<span class="material-symbols-outlined">slow_motion_video</span>
+<span class="font-label-sm mt-1">Playing</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface/50 hover:text-sage-accent transition-all active:scale-90">
+<span class="material-symbols-outlined">upload</span>
+<span class="font-label-sm mt-1">Upload</span>
+</button>
+</nav>
+<script>
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = playPauseBtn.querySelector('span');
+        let isPlaying = true;
+
+        playPauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            playIcon.textContent = isPlaying ? 'pause_circle' : 'play_circle';
+            playIcon.style.fontVariationSettings = isPlaying ? "'FILL' 1" : "'FILL' 0";
+        });
+
+        let progress = 35;
+        const progressFill = document.getElementById('progressFill');
+        setInterval(() => {
+            if(isPlaying) {
+                progress = (progress + 0.05) % 100;
+                progressFill.style.width = progress + '%';
+            }
+        }, 100);
+
+        document.querySelectorAll('main > div > div').forEach(card => {
+            if (!card.classList.contains('group')) return;
+            card.addEventListener('click', () => {
+                document.querySelectorAll('main > div > div.group').forEach(c => {
+                    c.classList.remove('border-sage-accent/30', 'active-glow', 'bg-surface-container');
+                    c.classList.add('border-outline-variant/10', 'bg-surface-container-low/40');
+                    const title = c.querySelector('h3');
+                    if(title) {
+                        title.classList.remove('text-sage-accent');
+                        title.classList.add('text-on-surface');
+                    }
+                    const icon = c.querySelector('.text-sage-accent');
+                    if(icon && icon !== card.querySelector('.text-sage-accent')) {
+                        icon.innerHTML = '<span class="material-symbols-outlined">chevron_right</span>';
+                        icon.classList.replace('text-sage-accent', 'text-on-surface-variant/40');
+                    }
+                });
+                
+                card.classList.add('border-sage-accent/30', 'active-glow', 'bg-surface-container');
+                card.classList.remove('border-outline-variant/10', 'bg-surface-container-low/40');
+                const activeTitle = card.querySelector('h3');
+                if(activeTitle) {
+                    activeTitle.classList.remove('text-on-surface');
+                    activeTitle.classList.add('text-sage-accent');
+                }
+            });
+        });
+    </script>
+</body></html>

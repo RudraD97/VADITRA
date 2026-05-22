@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VADITRA - Playlist View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&amp;family=Inter:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-primary": "#243600",
+                "on-secondary-fixed": "#151d19",
+                "on-secondary": "#29322d",
+                "outline": "#8e9380",
+                "on-primary-fixed": "#141f00",
+                "surface-tint": "#aed366",
+                "primary-container": "#c9f07e",
+                "error": "#ffb4ab",
+                "surface-container": "#1e201f",
+                "surface-bright": "#383a38",
+                "on-secondary-fixed-variant": "#404943",
+                "background": "#121413",
+                "surface-dim": "#121413",
+                "on-surface-variant": "#c4c9b5",
+                "error-container": "#93000a",
+                "surface-container-low": "#1a1c1b",
+                "on-error-container": "#ffdad6",
+                "inverse-on-surface": "#2f3130",
+                "primary-fixed": "#c9f07e",
+                "on-surface": "#e2e3e0",
+                "primary-fixed-dim": "#aed366",
+                "tertiary-container": "#e1e3e1",
+                "on-tertiary": "#2e3130",
+                "surface-container-high": "#282a29",
+                "tertiary-fixed": "#e1e3e1",
+                "secondary": "#bfc9c2",
+                "tertiary-fixed-dim": "#c5c7c5",
+                "inverse-primary": "#496800",
+                "secondary-fixed-dim": "#bfc9c2",
+                "surface": "#121413",
+                "secondary-fixed": "#dbe5dd",
+                "surface-variant": "#333534",
+                "on-primary-fixed-variant": "#364e00",
+                "on-primary-container": "#4f6e04",
+                "surface-container-lowest": "#0d0f0e",
+                "on-tertiary-fixed-variant": "#444746",
+                "surface-container-highest": "#333534",
+                "on-background": "#e2e3e0",
+                "primary": "#ffffff",
+                "inverse-surface": "#e2e3e0",
+                "on-error": "#690005",
+                "tertiary": "#ffffff",
+                "on-tertiary-fixed": "#191c1b",
+                "outline-variant": "#444939",
+                "on-tertiary-container": "#626563",
+                "on-secondary-container": "#aeb7b0",
+                "secondary-container": "#404943"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "container-margin-mobile": "20px",
+                "container-margin-desktop": "64px",
+                "gutter": "24px",
+                "unit": "8px",
+                "section-gap": "80px",
+                "nav-height": "64px",
+                "margin-mobile": "24px"
+        },
+        "fontFamily": {
+                "display-lg": ["Syne"],
+                "headline-lg-mobile": ["Syne"],
+                "headline-md": ["Syne"],
+                "body-md": ["Inter"],
+                "display-md": ["Syne"],
+                "body-lg": ["Inter"],
+                "headline-lg": ["Syne"],
+                "label-md": ["Inter"],
+                "label-sm": ["Inter"]
+        },
+        "fontSize": {
+                "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "display-md": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600"}]
+        }
+    },
+  }
+</script>
+<style>
+body {
+    background-color: #121413;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+.grain-overlay {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    opacity: 0.03;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAd88B70AuUuPUHSDkWTzSpellRNNvV0nUHjuxyXpM3ogWyknmR5utVAqu9909SjDUC6uWbd8cEmbzqshEAaqaVhcqPyai7bSrpgdR4SWvs90qP_hNKnOTbMFW7tk0EwuLc6D2mPKq4fsePIQ5GehmTeIPddNfZ0coe9mATerLWZXHpEkynvRYyhOxUotzkDdPRvDVaixgX1zxmLMT22oECS2o2-1mDMO7lbeocita-HY3eerrgA0Sn3_ENFb1SWuWL1Dnhv6sZJAkB);
+}
+.active-row-glow {
+    box-shadow: -16px 0 32px -12px rgba(201, 240, 126, 0.15);
+}
+@keyframes softFadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+    animation: softFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>
+</head>
+<body class="text-on-surface selection:bg-primary-container selection:text-on-primary-container font-body-md">
+<div class="grain-overlay"></div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl flex justify-between items-center h-nav-height px-margin-mobile border-b border-outline-variant/10">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary-fixed-dim hover:opacity-80 transition-opacity active:scale-95 duration-200">menu</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile tracking-tighter text-on-surface">VADITRA</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUS7lNw57QiJS3wDt7y4Hg7AtwxuMU8mBcSMp-EnVbgaI6hR9JNXGoncZqmk-Df2Zt4FWnYXZ-UwmJfbBAptQT7ACyU5q3q_dKRbrtTdLzB0wTt8pECLV4uw3bTI_82-0vG-FrifAzqN4v5NRmeqxIYM8VFH8DqzgWjgfvwEyrJ2Mh9n4rq2aE_zhQlUtRYDovgRw94L2TsPnR1vQRTFTOdn5GQ0Zf9JHHRKTNEeInCDiQjZfO0qL2RqiOHjsvRc94lsNIUz2nPkc3"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-nav-height pb-[calc(64px+64px+24px)] min-h-screen px-margin-mobile md:px-container-margin-desktop">
+<!-- Playlist Header Section -->
+<section class="mt-8 mb-10 flex flex-col md:flex-row gap-8 items-end">
+<div class="w-full md:w-72 aspect-square rounded-xl overflow-hidden shadow-2xl relative group">
+<img alt="Playlist Cover" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-bsS7c_C74TsZI5UFlQevnqYkgl0GAVtucwTTNO2e7kCmM9QxUANnTdEma8IqDX7zf--_rBEFGh5pm-rj7snPXFTcpVzR-bJGCeBeL6ySuQVpMFW97KzMZVYcL4LxUI05dmB_mXFF_KjEaAdY1ASnUr-nPyErNKLkeIfHXn0KDDgmeFI5I0gwSeCI3Su0gu9TWeyFC0YWwPEhc34q83J__W3VPrDFGDIO3-svorP9WExzFMUkMQhJR1Qrd2CiU7OtEcghDQ8TM509"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="w-20 h-20 bg-primary-fixed text-on-primary-fixed rounded-full flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform shadow-xl">
+<span class="material-symbols-outlined text-5xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+</div>
+</div>
+<div class="flex-1 space-y-4">
+<span class="font-label-md text-label-md text-primary-fixed-dim uppercase tracking-widest">Editor's Choice</span>
+<h2 class="font-display-md text-display-md text-on-surface leading-tight">Midnight Architecture</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Deep, immersive soundscapes curated for focused creation. Featuring minimalist techno and ambient textures.</p>
+<div class="flex items-center gap-4 pt-2">
+<button class="bg-primary-fixed text-on-primary-fixed px-10 py-4 rounded-full font-label-md text-label-md hover:brightness-110 active:scale-95 transition-all shadow-lg tracking-wider">PLAY ALL</button>
+<button class="w-14 h-14 rounded-full border border-outline flex items-center justify-center text-on-surface hover:border-primary-fixed hover:text-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Track List Section -->
+<section class="space-y-2 opacity-0 animate-fade-up" style="animation-delay: 0.2s;">
+<!-- Header for List (Desktop) -->
+<div class="hidden md:grid grid-cols-[1fr_200px_80px_64px] px-8 py-3 border-b border-outline-variant/10 text-on-surface-variant font-label-sm uppercase tracking-widest">
+<span>TITLE</span>
+<span>ARTIST</span>
+<span class="text-right">TIME</span>
+<span></span>
+</div>
+<!-- Track 1: Active -->
+<div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl bg-surface-container-high border-l-4 border-primary-fixed active-row-glow transition-all duration-300">
+<div class="flex items-center gap-6 flex-1">
+<span class="material-symbols-outlined text-primary-fixed text-lg" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-md text-headline-md text-primary-fixed leading-none">Prism Layers</span>
+<span class="font-label-md text-label-md text-on-surface-variant md:hidden">Kåre Valen</span>
+</div>
+</div>
+<div class="hidden md:block w-[200px] font-body-md text-body-md text-on-surface-variant">Kåre Valen</div>
+<div class="flex items-center gap-8">
+<span class="font-label-md text-label-md text-on-surface-variant">05:22</span>
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 flex items-center justify-center text-primary-fixed active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-2xl">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Track 2 -->
+<div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl hover:bg-surface-container transition-all duration-300">
+<div class="flex items-center gap-6 flex-1">
+<span class="font-label-md text-label-md text-on-surface-variant/40 group-hover:hidden w-5">02</span>
+<span class="material-symbols-outlined text-primary-fixed text-2xl hidden group-hover:block cursor-pointer w-5">play_arrow</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-fixed transition-colors leading-none">Obsidian Static</span>
+<span class="font-label-md text-label-md text-on-surface-variant md:hidden">Elowen</span>
+</div>
+</div>
+<div class="hidden md:block w-[200px] font-body-md text-body-md text-on-surface-variant">Elowen</div>
+<div class="flex items-center gap-8">
+<span class="font-label-md text-label-md text-on-surface-variant">04:18</span>
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-primary-fixed opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-2xl">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Track 3 -->
+<div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl hover:bg-surface-container transition-all duration-300">
+<div class="flex items-center gap-6 flex-1">
+<span class="font-label-md text-label-md text-on-surface-variant/40 group-hover:hidden w-5">03</span>
+<span class="material-symbols-outlined text-primary-fixed text-2xl hidden group-hover:block cursor-pointer w-5">play_arrow</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-fixed transition-colors leading-none">Void Patterns</span>
+<span class="font-label-md text-label-md text-on-surface-variant md:hidden">Studio Ø</span>
+</div>
+</div>
+<div class="hidden md:block w-[200px] font-body-md text-body-md text-on-surface-variant">Studio Ø</div>
+<div class="flex items-center gap-8">
+<span class="font-label-md text-label-md text-on-surface-variant">06:45</span>
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-primary-fixed opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-2xl">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Track 4 -->
+<div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl hover:bg-surface-container transition-all duration-300">
+<div class="flex items-center gap-6 flex-1">
+<span class="font-label-md text-label-md text-on-surface-variant/40 group-hover:hidden w-5">04</span>
+<span class="material-symbols-outlined text-primary-fixed text-2xl hidden group-hover:block cursor-pointer w-5">play_arrow</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-fixed transition-colors leading-none">Tactile Rhythm</span>
+<span class="font-label-md text-label-md text-on-surface-variant md:hidden">The Architect</span>
+</div>
+</div>
+<div class="hidden md:block w-[200px] font-body-md text-body-md text-on-surface-variant">The Architect</div>
+<div class="flex items-center gap-8">
+<span class="font-label-md text-label-md text-on-surface-variant">03:59</span>
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-primary-fixed opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-2xl">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Track 5 -->
+<div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl hover:bg-surface-container transition-all duration-300">
+<div class="flex items-center gap-6 flex-1">
+<span class="font-label-md text-label-md text-on-surface-variant/40 group-hover:hidden w-5">05</span>
+<span class="material-symbols-outlined text-primary-fixed text-2xl hidden group-hover:block cursor-pointer w-5">play_arrow</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-fixed transition-colors leading-none">Ceramic Drift</span>
+<span class="font-label-md text-label-md text-on-surface-variant md:hidden">M. Jons</span>
+</div>
+</div>
+<div class="hidden md:block w-[200px] font-body-md text-body-md text-on-surface-variant">M. Jons</div>
+<div class="flex items-center gap-8">
+<span class="font-label-md text-label-md text-on-surface-variant">05:12</span>
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-primary-fixed opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-2xl">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Mini Player -->
+<div class="fixed bottom-[80px] left-margin-mobile right-margin-mobile z-40 h-16 bg-surface-container-highest/90 backdrop-blur-2xl border border-outline-variant/20 rounded-xl flex items-center px-4 gap-4 shadow-2xl">
+<img alt="Current Track" class="w-11 h-11 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD3dznbXgsjtMSJA0stbKpUfyHUNde4U4W8kOKDovzvZApSYpZYhQzHLFJ7Gm0vcflkjn-GCIk-FWPWT2HOH6HyTfQDynxz_9HIooxNcbVLGVw-Y-fQWoHLYBVju7VoC-O3kjGWTLS3Jm-pKkofOFjHB2WpAcyYXy-R_6Yi3l8SL_Qk6DpI1V7ept2QANDUB0SbdnH5VtJCPYu9oewvHl8Hkm1r__Zpjs_2ZQ90m93vDdhjxA9Dex3tcwVMbLKvWzz71kxadyivEO_"/>
+<div class="flex-1 overflow-hidden">
+<h4 class="font-label-md text-label-md text-primary-fixed truncate">Prism Layers</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant/80 truncate">Kåre Valen</p>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">skip_previous</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-primary-fixed text-on-primary-fixed rounded-full active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">skip_next</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-4 right-4 h-0.5 bg-outline-variant/20 overflow-hidden">
+<div class="h-full bg-primary-fixed" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-height bg-surface-container-lowest/98 backdrop-blur-xl border-t border-outline-variant/10 flex justify-around items-center px-gutter pb-safe">
+<a class="flex flex-col items-center justify-center text-primary-fixed after:content-[''] after:w-1 after:h-1 after:bg-primary-fixed after:rounded-full after:mt-1 hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl">library_music</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary-fixed transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl">search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary-fixed transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl">slow_motion_video</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary-fixed transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl">upload</span>
+</a>
+</nav>
+<script>
+    // Micro-interactions for tracks
+    document.querySelectorAll('section > div.group').forEach(row => {
+        row.addEventListener('click', () => {
+            // Remove active state from all
+            document.querySelectorAll('section > div.group').forEach(r => {
+                r.classList.remove('bg-surface-container-high', 'border-l-4', 'border-primary-fixed', 'active-row-glow');
+                const title = r.querySelector('.font-headline-md');
+                if(title) title.classList.replace('text-primary-fixed', 'text-on-surface');
+                const icon = r.querySelector('.material-symbols-outlined[style*="equalizer"]');
+                if(icon) {
+                    icon.textContent = 'play_arrow';
+                    icon.classList.replace('text-primary-fixed', 'text-on-surface-variant/40');
+                }
+            });
+            
+            // Add active state to clicked
+            row.classList.add('bg-surface-container-high', 'border-l-4', 'border-primary-fixed', 'active-row-glow');
+            row.querySelector('.font-headline-md')?.classList.replace('text-on-surface', 'text-primary-fixed');
+        });
+    });
+
+    // Atmospheric parallax on scroll
+    window.addEventListener('scroll', () => {
+        const headerImg = document.querySelector('section img');
+        const scrolled = window.pageYOffset;
+        if(headerImg) {
+            headerImg.style.transform = `translateY(${scrolled * 0.05}px)`;
+        }
+    });
+</script>
+</body></html>
