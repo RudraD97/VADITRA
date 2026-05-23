@@ -86,12 +86,12 @@ export default function App() {
 
         {/* Page content — reserve space for MiniPlayer + BottomNav so size never changes */}
         <div className="flex-1" style={{ paddingBottom: isPlayerExpanded ? '0px' : '136px' }}>
-          <div style={{ display: activeView === 'home' ? '' : 'none' }}><LibraryPage {...sharedProps} /></div>
-          <div style={{ display: activeView === 'search' ? '' : 'none' }}><SearchPage {...sharedProps} /></div>
-          <div style={{ display: activeView === 'playlist' ? '' : 'none' }}><PlaylistPage {...sharedProps} /></div>
-          <div style={{ display: activeView === 'upload' ? '' : 'none' }}><UploadPage {...sharedProps} /></div>
-          <div style={{ display: activeView === 'downloads' ? '' : 'none' }}><DownloadPage {...sharedProps} /></div>
-          <div style={{ display: activeView === 'profile' ? '' : 'none' }}><ProfilePage /></div>
+          {activeView === 'home' && <LibraryPage {...sharedProps} />}
+          {activeView === 'search' && <SearchPage {...sharedProps} />}
+          {activeView === 'playlist' && <PlaylistPage {...sharedProps} />}
+          {activeView === 'upload' && <UploadPage {...sharedProps} />}
+          {activeView === 'downloads' && <DownloadPage {...sharedProps} />}
+          {activeView === 'profile' && <ProfilePage />}
         </div>
 
         {/* Mini Player — wrapped so it still exists in DOM when hidden (prevents re-mount) */}

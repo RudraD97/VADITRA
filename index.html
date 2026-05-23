@@ -42,12 +42,6 @@
       40% { transform: scale(1.35); }
       100% { transform: scale(1); }
     }
-    .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .snap-scroll { scroll-snap-type: y mandatory; }
-    .snap-scroll > * { scroll-snap-align: center; scroll-snap-stop: always; }
-    .song-enter { opacity: 0; transform: translateY(24px) scale(0.95); transition: all 0.5s cubic-bezier(.22,.68,0,1); }
-    .song-visible { opacity: 1; transform: translateY(0) scale(1); }
     @keyframes equalizerBounce {
       0%, 100% { transform: scaleY(0.6); opacity: 0.6; }
       25% { transform: scaleY(1); opacity: 1; }
