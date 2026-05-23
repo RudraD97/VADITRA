@@ -107,7 +107,7 @@ export default function LibraryPage() {
         </div>
 
         {/* ── Your Songs ───────────────────────────────────────────────── */}
-        <div ref={sectionRef} className="mb-14">
+        <div ref={sectionRef} className="mb-8">
           <div className="flex items-center justify-between">
             <h2 className="text-[20px] font-bold font-syne flex items-center gap-2"
               style={{

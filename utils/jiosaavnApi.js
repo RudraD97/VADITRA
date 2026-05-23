@@ -51,41 +51,29 @@ export async function searchOnlineSongs(query, limit = 20) {
   }
 }
 
-const DEFAULT_SEEDS = ['trending english songs', 'trending hindi songs', 'top hits', 'latest songs 2025', 'bollywood hits']
+const TRENDING_SEEDS = [
+  'trending songs', 'viral hits', 'top charts', 'new releases',
+  'trending english', 'trending hindi', 'trending punjabi',
+  'today\'s hits', 'popular songs', 'trending 2025',
+  'top 50', 'global hits', 'indie trending',
+]
 
-export async function getRecommendations(library = []) {
-  const artistCounts = {}
-  library.forEach(t => {
-    if (t.artist) {
-      const parts = t.artist.split(/[,&]/).map(s => s.trim()).filter(Boolean)
-      parts.forEach(a => { artistCounts[a] = (artistCounts[a] || 0) + 1 })
-    }
-  })
-
-  const topArtists = Object.entries(artistCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([name]) => name)
-
-  const queries = topArtists.length > 0 ? topArtists : DEFAULT_SEEDS
-
+export async function getRecommendations() {
+  const chosen = [...TRENDING_SEEDS].sort(() => Math.random() - 0.5).slice(0, 3)
   try {
     const results = await Promise.allSettled(
-      queries.map(q => searchOnlineSongs(q, 5))
+      chosen.map(q => searchOnlineSongs(q, 3))
     )
     const all = results
       .filter(r => r.status === 'fulfilled')
       .flatMap(r => r.value)
-    const seenIds = new Set()
-    const seenTitles = new Set()
+    const seen = new Set()
     return all.filter(t => {
-      if (seenIds.has(t.id)) return false
-      seenIds.add(t.id)
-      const titleKey = (t.title || '').toLowerCase().trim()
-      if (seenTitles.has(titleKey)) return false
-      seenTitles.add(titleKey)
+      const key = (t.title || '').toLowerCase().trim()
+      if (seen.has(key)) return false
+      seen.add(key)
       return true
-    }).slice(0, 15)
+    }).slice(0, 5)
   } catch {
     return []
   }

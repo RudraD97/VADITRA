@@ -19,7 +19,6 @@ export default function SearchPage() {
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const setQueue = usePlayerStore(s => s.setQueue)
   const setPlayerExpanded = usePlayerStore(s => s.setPlayerExpanded)
-  const activeView = usePlayerStore(s => s.activeView)
 
   const handleOnlineSearch = useCallback((q) => {
     if (onlineTimer.current) clearTimeout(onlineTimer.current)
@@ -32,25 +31,27 @@ export default function SearchPage() {
     }, 400)
   }, [])
 
-  const handleRefreshRecs = useCallback(() => {
+  const [recsVersion, setRecsVersion] = useState(0)
+
+  const fetchRecommendations = useCallback(() => {
     setRecsLoading(true)
-    getRecommendations(library).then(recs => {
+    getRecommendations().then(recs => {
       setRecommendations(recs)
       setRecsLoading(false)
     })
   }, [library])
 
+  const handleRefreshRecs = useCallback(() => {
+    setRecsVersion(v => v + 1)
+  }, [])
+
   const isOnline = useOnlineStatus()
 
   useEffect(() => {
-    if (mode === 'online' && !query.trim() && isOnline && activeView === 'search') {
-      setRecsLoading(true)
-      getRecommendations(library).then(recs => {
-        setRecommendations(recs)
-        setRecsLoading(false)
-      })
+    if (isOnline && mode === 'online' && !query.trim()) {
+      fetchRecommendations()
     }
-  }, [activeView, mode, query, isOnline, library])
+  }, [isOnline, mode, query, recsVersion])
 
   const results = useMemo(() => {
     if (!query.trim()) return { tracks: [], playlists: [] }
@@ -267,14 +268,14 @@ export default function SearchPage() {
                               <p className="text-[12px] text-on-surface-variant/60 truncate font-inter">{track.artist}</p>
                             </div>
                             <div className="flex-shrink-0 flex items-center gap-2">
+                              <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
+                                {track._language || 'stream'}
+                              </span>
                               {isCurrentPlaying ? (
                                 <span className="material-symbols-outlined text-primary-fixed-dim text-[18px] w-[3.25rem] text-right" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
                               ) : (
                                 <span className="inline-block w-[3.25rem] text-right text-[12px] text-on-surface-variant/40 font-inter tabular-nums">{formatTime(track.duration)}</span>
                               )}
-                              <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
-                                {track._language || 'stream'}
-                              </span>
                             </div>
                           </div>
                         )
@@ -350,8 +351,11 @@ export default function SearchPage() {
                           </p>
                         </div>
 
-                        {/* Duration / playing indicator + badge */}
+                        {/* Badge + Duration / playing indicator */}
                         <div className="flex-shrink-0 flex items-center gap-2">
+                          <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
+                            {track._language || 'stream'}
+                          </span>
                           {isCurrentPlaying ? (
                             <span className="material-symbols-outlined text-primary-fixed-dim text-[18px] w-[3.25rem] text-right" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
                           ) : (
@@ -359,9 +363,6 @@ export default function SearchPage() {
                               {formatTime(track.duration)}
                             </span>
                           )}
-                          <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
-                            {track._language || 'stream'}
-                          </span>
                         </div>
                       </div>
                     )
