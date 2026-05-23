@@ -6,6 +6,7 @@ import { useVisualizer } from './hooks/useVisualizer'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSeekBar } from './hooks/useSeekBar'
 import { getAllAudioFiles } from './utils/indexedDB'
+import notifyDevice from './utils/deviceNotify'
 
 // Pages
 import LibraryPage from './pages/LibraryPage'
@@ -13,6 +14,8 @@ import SearchPage from './pages/SearchPage'
 import PlaylistPage from './pages/PlaylistPage'
 import PlayerPage from './pages/PlayerPage'
 import UploadPage from './pages/UploadPage'
+import DownloadPage from './pages/DownloadPage'
+import ProfilePage from './pages/ProfilePage'
 
 import LandingPage from './pages/LandingPage'
 
@@ -29,6 +32,8 @@ export default function App() {
   const library = usePlayerStore(s => s.library)
   const restoreTrackSrc = usePlayerStore(s => s.restoreTrackSrc)
 
+  useEffect(() => { notifyDevice() }, [])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -36,7 +41,8 @@ export default function App() {
       if (cancelled) return
       for (const file of files) {
         const url = URL.createObjectURL(file.data)
-        restoreTrackSrc(file.id, url)
+        const coverUrl = file.cover ? URL.createObjectURL(file.cover) : null
+        restoreTrackSrc(file.id, url, coverUrl)
       }
       setRestoring(false)
     })()
@@ -84,6 +90,8 @@ export default function App() {
           {activeView === 'search' && <SearchPage {...sharedProps} />}
           {activeView === 'playlist' && <PlaylistPage {...sharedProps} />}
           {activeView === 'upload' && <UploadPage {...sharedProps} />}
+          {activeView === 'downloads' && <DownloadPage {...sharedProps} />}
+          {activeView === 'profile' && <ProfilePage />}
         </div>
 
         {/* Mini Player — wrapped so it still exists in DOM when hidden (prevents re-mount) */}

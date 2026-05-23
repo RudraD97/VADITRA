@@ -446,10 +446,10 @@ export default function LibraryPage() {
           const track = library.find(t => t.id === menuTrackId)
           if (!track) return null
           return (
-            <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center" onClick={() => setMenuTrackId(null)}>
+            <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={() => setMenuTrackId(null)}>
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
               <div
-                className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
+                className="relative w-full max-w-xs mx-auto rounded-2xl overflow-hidden shadow-2xl"
                 style={{ background: 'rgba(30, 32, 31, 0.98)', backdropFilter: 'blur(20px)', border: '1px solid rgba(68, 73, 57, 0.25)' }}
                 onClick={e => e.stopPropagation()}
               >

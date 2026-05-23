@@ -17,6 +17,7 @@ export function useAudioEngine() {
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio()
+      audioRef.current.crossOrigin = 'anonymous'
       audioRef.current.preload = 'auto'
       setAudioElement(audioRef.current)
     }

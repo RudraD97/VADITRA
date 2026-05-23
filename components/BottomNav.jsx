@@ -5,6 +5,8 @@ import usePlayerStore from '../store/playerStore'
 const NAV_ITEMS = [
   { view: 'home', icon: 'home', label: 'Home', filled: true },
   { view: 'search', icon: 'search', label: 'Search', filled: false },
+  { view: 'downloads', icon: 'download', label: 'Downloads', filled: true },
+  { view: 'profile', icon: 'person', label: 'Profile', filled: true },
 ]
 
 export default function BottomNav() {
@@ -27,7 +29,7 @@ export default function BottomNav() {
         paddingBottom: 'env(safe-area-inset-bottom, 0)',
       }}
     >
-      <div className="flex-1 flex justify-center gap-20">
+      <div className="flex-1 flex justify-evenly items-center max-w-sm mx-auto w-full">
         {NAV_ITEMS.map(({ view, icon, label, filled }) => {
           const isActive = activeView === view
           return (
@@ -52,10 +54,6 @@ export default function BottomNav() {
             </button>
           )
         })}
-        <div className="flex flex-col items-center justify-center gap-0.5 min-w-[55px] min-h-[48px] opacity-50 cursor-default select-none">
-          <span className="material-symbols-outlined text-[24px] text-on-surface-variant/60" style={{ fontVariationSettings: "'FILL' 0" }}>person</span>
-          <span className="text-[10px] font-inter tracking-wider text-on-surface-variant/60">Profile</span>
-        </div>
       </div>
     </nav>
   )

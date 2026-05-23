@@ -36,7 +36,7 @@ const usePlayerStore = create(
       library: [],              // All tracks ever added
 
       // ─── UI State ────────────────────────────────────────────────
-      activeView: 'home',    // 'home' | 'playlist' | 'player' | 'upload'
+      activeView: 'home',    // 'home' | 'search' | 'playlist' | 'player' | 'upload' | 'downloads' | 'profile'
       isPlayerExpanded: false,
       isQueueVisible: false,
       audioError: null,
@@ -244,11 +244,11 @@ const usePlayerStore = create(
         set({ library: [...library, ...unique] })
       },
 
-      restoreTrackSrc: (trackId, src) => {
+      restoreTrackSrc: (trackId, src, cover = null) => {
         const { library, currentTrack } = get()
         set({
-          library: library.map(t => t.id === trackId ? { ...t, src } : t),
-          currentTrack: currentTrack?.id === trackId ? { ...currentTrack, src } : currentTrack,
+          library: library.map(t => t.id === trackId ? { ...t, src, ...(cover ? { cover } : {}) } : t),
+          currentTrack: currentTrack?.id === trackId ? { ...currentTrack, src, ...(cover ? { cover } : {}) } : currentTrack,
         })
       },
 

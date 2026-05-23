@@ -31,7 +31,22 @@ export function useVisualizer(audioRef) {
       if (audioRef.current && !sourceNodeRef.current) {
         const source = ctx.createMediaElementSource(audioRef.current)
         source.connect(analyser)
-        analyser.connect(ctx.destination)
+
+        // Warmth: subtle bass boost
+        const lowshelf = ctx.createBiquadFilter()
+        lowshelf.type = 'lowshelf'
+        lowshelf.frequency.value = 80
+        lowshelf.gain.value = 2.0
+
+        // Clarity: gentle treble boost
+        const highshelf = ctx.createBiquadFilter()
+        highshelf.type = 'highshelf'
+        highshelf.frequency.value = 8000
+        highshelf.gain.value = 1.5
+
+        analyser.connect(lowshelf)
+        lowshelf.connect(highshelf)
+        highshelf.connect(ctx.destination)
         sourceNodeRef.current = source
       }
 

@@ -13,12 +13,12 @@ function openDB() {
   })
 }
 
-export async function saveAudioFile(id, blob) {
+export async function saveAudioFile(id, blob, coverBlob = null) {
   try {
     const db = await openDB()
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite')
-      tx.objectStore(STORE_NAME).put({ id, data: blob, createdAt: new Date().toISOString() })
+      tx.objectStore(STORE_NAME).put({ id, data: blob, cover: coverBlob, createdAt: new Date().toISOString() })
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
     })

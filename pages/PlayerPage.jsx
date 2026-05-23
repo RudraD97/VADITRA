@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import usePlayerStore from '../store/playerStore'
 import Visualizer from '../components/Visualizer'
 import BottomNav from '../components/BottomNav'
 import { formatTime, DEFAULT_COVER } from '../utils/audioUtils'
+import { getRelatedSongs, downloadOnlineTrack } from '../utils/jiosaavnApi'
 
 export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initContext }) {
 
@@ -12,23 +13,41 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
     togglePlay, playNext, playPrevious,
     toggleShuffle, cycleRepeat, toggleLike,
     setPlayerExpanded, setActiveView,
-    queue, queueIndex, deleteTrack,
+    queue, queueIndex, deleteTrack, setQueue,
+    library, addToLibrary, setCurrentTrack,
   } = usePlayerStore()
 
-  const upcoming = queue.slice(queueIndex + 1, queueIndex + 6)
+  const upcomingLocal = queue.slice(queueIndex + 1, queueIndex + 6)
+  const [upcomingRelated, setUpcomingRelated] = useState([])
   const [showHeaderMenu, setShowHeaderMenu] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  const isDownloaded = currentTrack?._source === 'online' && library.some(t => t.id === currentTrack.id && t._isDownloaded)
+
+  const handleDownload = async () => {
+    if (!currentTrack || downloading) return
+    setDownloading(true)
+    const result = await downloadOnlineTrack(currentTrack)
+    if (result) {
+      addToLibrary(result)
+      usePlayerStore.setState({ currentTrack: result })
+    }
+    setDownloading(false)
+    setShowHeaderMenu(false)
+  }
 
   useEffect(() => {
-    if (!showHeaderMenu) return
-    const handler = (e) => {
-      if (!e.target.closest('[data-menu="player-header"]')) {
-        setShowHeaderMenu(false)
-      }
+    if (currentTrack?._source === 'online') {
+      getRelatedSongs(currentTrack).then(setUpcomingRelated)
+    } else {
+      setUpcomingRelated([])
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showHeaderMenu])
+  }, [currentTrack?.id, currentTrack?._source])
+
+  const upcoming = currentTrack?._source === 'online' && upcomingRelated.length > 0
+    ? upcomingRelated
+    : upcomingLocal
 
   const handleShare = async () => {
     const track = currentTrack
@@ -91,7 +110,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
 
         {/* ── VADITRA Header Bar ───────────────────────────────────────────── */}
         <div
-          className="sticky top-0 z-30 flex items-center h-[72px] px-4 gap-2 flex-shrink-0"
+          className="sticky top-0 z-30 flex items-center h-[72px] px-4 flex-shrink-0"
           style={{
             background: 'rgba(30, 32, 31, 0.96)',
             backdropFilter: 'blur(20px)',
@@ -99,15 +118,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
             boxShadow: '0 4px 24px -8px rgba(0,0,0,0.4)',
           }}
         >
-          <button
-            className="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary-fixed-dim transition-colors active:scale-90"
-            onClick={handleClose}
-            aria-label="Close"
-          >
-            <span className="material-symbols-outlined">keyboard_arrow_down</span>
-          </button>
-
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex items-center justify-center">
             <div className="relative inline-flex items-center justify-center select-none">
               <span className="material-symbols-outlined absolute -left-[22px] -top-[2px] text-[11px] text-primary-fixed-dim rotate-[-20deg]" style={{ animation: 'blinkIcon 1s ease-in-out infinite', fontVariationSettings: "'FILL' 1" }}>headphones</span>
               <span
@@ -137,7 +148,15 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
         >
           <div className="w-8 h-1 bg-on-surface/20 rounded-full mb-3" />
           <div className="flex justify-between items-center w-full px-5 h-[64px]">
-            <div className="flex items-center w-12" />
+            <div className="flex items-center justify-start w-12">
+              <button
+                className="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary-fixed-dim transition-colors active:scale-90"
+                onClick={handleClose}
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+            </div>
             <div className="flex flex-col items-center">
               <span className="text-[11px] text-on-surface-variant/50 uppercase tracking-[0.2em] font-inter">
                 Now Playing
@@ -146,100 +165,110 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
                 {currentTrack?.album || 'VADITRA'}
               </span>
             </div>
-            <div className="relative flex items-center justify-end w-12">
+            <div className="flex items-center justify-end w-12">
               <button
-                className="w-12 h-12 flex items-center justify-center active:scale-90 transition-transform duration-200 hover:scale-105"
-                onClick={() => setShowHeaderMenu(v => !v)}
+                onClick={e => { e.stopPropagation(); setShowHeaderMenu(v => !v) }}
+                className="w-9 h-9 flex items-center justify-center rounded-lg transition-all text-on-surface-variant/40"
+                style={{ background: showHeaderMenu ? 'rgba(174,211,102,0.1)' : 'transparent' }}
               >
-                <span className="material-symbols-outlined text-on-surface/80 hover:text-on-surface transition-colors">more_vert</span>
+                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>more_vert</span>
               </button>
-
-              {showHeaderMenu && currentTrack && (
-                <div
-                  data-menu="player-header"
-                  className="absolute right-0 top-full mt-2 z-[100] min-w-[200px] rounded-2xl py-2 shadow-2xl"
-                  style={{
-                    background: 'rgba(25, 27, 25, 0.98)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(68, 73, 57, 0.25)',
-                  }}
-                >
-                  <button
-                    onClick={() => { toggleLike(currentTrack.id); setShowHeaderMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors font-inter"
-                  >
-                    <span className="material-symbols-outlined text-[20px]" style={{ color: currentTrack.liked ? '#aed366' : 'inherit', fontVariationSettings: currentTrack.liked ? "'FILL' 1" : "'FILL' 0'" }}>
-                      favorite
-                    </span>
-                    {currentTrack.liked ? 'Liked' : 'Like'}
-                  </button>
-                  <button
-                    onClick={() => { handleShare(); setShowHeaderMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors font-inter"
-                  >
-                    <span className="material-symbols-outlined text-[20px] text-on-surface-variant/70">share</span>
-                    Share
-                  </button>
-                  <div className="mx-4 my-1 h-px" style={{ background: 'rgba(68, 73, 57, 0.25)' }} />
-                  <button
-                    onClick={() => { deleteTrack(currentTrack.id); setPlayerExpanded(false); setActiveView('home'); setShowHeaderMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-error hover:bg-white/5 transition-colors font-inter"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
-                    Remove
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </header>
 
         {/* ── Album Art ──────────────────────────────────────────────────── */}
         <section
-          className="flex flex-col items-center px-8 mt-6 sm:mt-12 max-h-[35vh] sm:max-h-[40vh]"
+          className="flex flex-col items-center px-8 mt-6 sm:mt-12"
           style={{ animation: 'fadeInUp 0.5s ease-out 0.2s both' }}
         >
-          <div className="relative w-full max-w-[280px] aspect-square flex-shrink-0 rounded-full"
-            style={{
-              border: '2px solid rgba(174,211,102,0.25)',
-              boxShadow: '0 0 20px rgba(174,211,102,0.08)',
-            }}
-          >
-            {/* Glow ring — outside the clip so it radiates freely */}
+          <div className="relative w-full max-w-[300px] aspect-square flex items-center justify-center">
+
+            {/* Aurora backdrop — subtle animated gradient clouds */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[32px]">
+              <div
+                className="absolute inset-0 animate-auroraShift"
+                style={{
+                  background: `
+                    radial-gradient(ellipse at 30% 20%, rgba(174,211,102,0.12) 0%, transparent 60%),
+                    radial-gradient(ellipse at 70% 80%, rgba(201,240,126,0.08) 0%, transparent 50%),
+                    radial-gradient(ellipse at 50% 50%, rgba(73,104,0,0.06) 0%, transparent 50%)
+                  `,
+                  filter: 'blur(50px)',
+                  transform: 'scale(1.3)',
+                }}
+              />
+            </div>
+
+            {/* Floating particles */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute w-1 h-1 bg-primary-fixed-dim/40 rounded-full animate-particle1" style={{ top: '12%', left: '18%' }} />
+              <div className="absolute w-[3px] h-[3px] bg-primary-fixed-dim/30 rounded-full animate-particle2" style={{ top: '22%', right: '20%' }} />
+              <div className="absolute w-1 h-1 bg-primary-fixed-dim/25 rounded-full animate-particle3" style={{ bottom: '18%', left: '25%' }} />
+              <div className="absolute w-[3px] h-[3px] bg-primary-fixed-dim/35 rounded-full animate-particle1" style={{ bottom: '28%', right: '15%' }} />
+              <div className="absolute w-1 h-1 bg-primary/20 rounded-full animate-particle2" style={{ top: '8%', left: '48%' }} />
+              <div className="absolute w-[3px] h-[3px] bg-primary-fixed-dim/25 rounded-full animate-particle3" style={{ top: '50%', right: '10%' }} />
+            </div>
+
+            {/* Outer aura — concentric glowing rings */}
             <div
-              className="absolute -inset-4 rounded-full transition-all duration-700 pointer-events-none"
+              className="absolute inset-[2%] rounded-[24px] transition-all duration-1000 pointer-events-none"
               style={{
                 boxShadow: isPlaying
-                  ? `0 0 80px 20px rgba(174,211,102,${glowIntensity}), 0 0 160px 40px rgba(174,211,102,${glowIntensity})`
-                  : `0 0 40px 10px rgba(174,211,102,${glowIntensity})`,
+                  ? `0 0 40px 8px rgba(174,211,102,0.12), 0 0 80px 20px rgba(174,211,102,0.06)`
+                  : `0 0 20px 4px rgba(174,211,102,0.05)`,
               }}
             />
-            {/* Vinyl disc container */}
-            <div className="relative w-full h-full rounded-full overflow-hidden">
-              {/* Vinyl rim ring */}
-              <div className="absolute inset-0 rounded-full z-10 pointer-events-none"
-                style={{
-                  border: '3px solid rgba(174,211,102,0.08)',
-                  boxShadow: 'inset 0 0 30px rgba(0,0,0,0.3)',
-                }}
-              />
-              {/* Center spindle hole */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full z-20 pointer-events-none"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(174,211,102,0.1)',
-                }}
-              />
-              {/* Album image */}
+            <div
+              className="absolute inset-[6%] rounded-[20px] transition-all duration-1000 pointer-events-none"
+              style={{
+                boxShadow: isPlaying
+                  ? `0 0 60px 15px rgba(174,211,102,0.08), inset 0 0 30px rgba(174,211,102,0.03)`
+                  : `0 0 20px 5px rgba(174,211,102,0.03)`,
+              }}
+            />
+
+            {/* Album art card — floating glass card */}
+            <div
+              className="relative w-[82%] aspect-square rounded-[20px] overflow-hidden
+                transition-all duration-500"
+              style={{
+                boxShadow: isPlaying
+                  ? `0 24px 64px -8px rgba(0,0,0,0.5), 0 0 48px rgba(174,211,102,0.08)`
+                  : `0 20px 48px -8px rgba(0,0,0,0.4)`,
+                animation: isPlaying ? 'float 5s ease-in-out infinite' : 'none',
+              }}
+            >
               <img
-                src={currentTrack.cover || DEFAULT_COVER} onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }}
+                src={currentTrack.cover || DEFAULT_COVER}
+                onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }}
                 alt="Album Art"
                 className="w-full h-full object-cover select-none pointer-events-none"
-                style={{
-                  animation: isPlaying ? 'albumSpin 20s linear infinite' : 'none',
-                  animationPlayState: isPlaying ? 'running' : 'paused',
-                }}
                 draggable={false}
+              />
+
+              {/* Glass shimmer overlay */}
+              <div
+                className="absolute inset-0 pointer-events-none animate-shimmer"
+                style={{
+                  background: 'linear-gradient(105deg, transparent 25%, rgba(255,255,255,0.07) 40%, transparent 55%)',
+                }}
+              />
+
+              {/* Bottom vignette */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[35%] pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 100%)',
+                }}
+              />
+
+              {/* Subtle border glow */}
+              <div
+                className="absolute inset-0 rounded-[20px] pointer-events-none"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
               />
             </div>
           </div>
@@ -366,7 +395,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
             <div className="mb-4 mt-0.5" style={{ height: '1px', background: 'linear-gradient(90deg, rgba(174,211,102,0.2), rgba(174,211,102,0.05), transparent)' }} />
             <div className="space-y-1">
               {upcoming.map((track, i) => (
-                <div key={track.id + i} className="flex items-center gap-3 px-1.5 py-1.5 rounded-lg" style={{ opacity: 1 - i * 0.15 }}>
+                <div key={track.id + i} className="flex items-center gap-3 px-1.5 py-1.5 rounded-lg cursor-pointer hover:bg-surface-container/60 transition-all active:scale-[0.98]" style={{ opacity: 1 - i * 0.15 }} onClick={() => { setQueue(upcoming, i); setPlayerExpanded(true) }}>
                   <img src={track.cover || DEFAULT_COVER} alt="" className="w-9 h-9 rounded-lg object-cover bg-surface-variant flex-shrink-0 ring-1 ring-white/5" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
                   <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim/50 flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   <div className="min-w-0 flex-1">
@@ -392,9 +421,30 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
           from { opacity: 0; transform: translateY(15px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes albumSpin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes auroraShift {
+          0% { transform: scale(1.3) rotate(0deg); }
+          50% { transform: scale(1.35) rotate(3deg); }
+          100% { transform: scale(1.3) rotate(0deg); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes particle1 {
+          0%, 100% { opacity: 0.3; transform: translateY(0) scale(1); }
+          50% { opacity: 0.8; transform: translateY(-16px) scale(1.2); }
+        }
+        @keyframes particle2 {
+          0%, 100% { opacity: 0.2; transform: translateY(0) scale(1); }
+          50% { opacity: 0.6; transform: translateY(12px) scale(0.8); }
+        }
+        @keyframes particle3 {
+          0%, 100% { opacity: 0.25; transform: translateX(0) scale(1); }
+          50% { opacity: 0.7; transform: translateX(-10px) scale(1.1); }
         }
         @keyframes glowPulse {
           0%, 100% { opacity: 0.6; transform: scale(1); }
@@ -439,6 +489,65 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
       `}</style>
       </div>
       <BottomNav />
+
+      {/* ── Track menu centered overlay ── */}
+      {showHeaderMenu && currentTrack && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={() => setShowHeaderMenu(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-xs mx-auto rounded-2xl overflow-hidden shadow-2xl"
+            style={{ background: 'rgba(30, 32, 31, 0.98)', backdropFilter: 'blur(20px)', border: '1px solid rgba(68, 73, 57, 0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Track info header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'rgba(68, 73, 57, 0.2)' }}>
+              <img src={currentTrack.cover || DEFAULT_COVER} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-surface-variant" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
+              <div className="flex-grow min-w-0">
+                <p className="text-[14px] font-medium truncate font-inter text-[#e2e3e0]">{currentTrack.title}</p>
+                <p className="text-[11px] text-[#c4c9b5]/50 truncate font-inter">{currentTrack.artist || 'Unknown Artist'}</p>
+              </div>
+              <button onClick={() => setShowHeaderMenu(false)} className="text-[#c4c9b5]/40 active:scale-90 flex-shrink-0">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="py-2">
+              <button onClick={() => { toggleLike(currentTrack.id); setShowHeaderMenu(false) }}
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[20px]" style={{ color: currentTrack.liked ? '#aed366' : 'rgba(226,227,224,0.8)', fontVariationSettings: currentTrack.liked ? "'FILL' 1" : "'FILL' 0'" }}>favorite</span>
+                <span className="text-[14px] font-inter text-[#e2e3e0]">{currentTrack.liked ? 'Liked' : 'Like'}</span>
+              </button>
+              <button onClick={() => { handleShare(); setShowHeaderMenu(false) }}
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#e2e3e0]/80">share</span>
+                <span className="text-[14px] font-inter text-[#e2e3e0]">Share</span>
+              </button>
+              {currentTrack?._source === 'online' && (
+                <button onClick={handleDownload}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"
+                >
+                  <span className={`material-symbols-outlined text-[20px] ${isDownloaded ? 'text-primary-fixed-dim' : 'text-[#e2e3e0]/80'}`} style={{ fontVariationSettings: isDownloaded ? "'FILL' 1" : "'FILL' 0" }}>
+                    {downloading ? 'hourglass_top' : isDownloaded ? 'check_circle' : 'download'}
+                  </span>
+                  <span className="text-[14px] font-inter" style={{ color: isDownloaded ? '#aed366' : '#e2e3e0' }}>
+                    {downloading ? 'Downloading...' : isDownloaded ? 'Downloaded' : 'Download'}
+                  </span>
+                </button>
+              )}
+              <div className="mx-5 my-1 h-px" style={{ background: 'rgba(68, 73, 57, 0.25)' }} />
+              <button onClick={() => { deleteTrack(currentTrack.id); setPlayerExpanded(false); setActiveView('home'); setShowHeaderMenu(false) }}
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[20px] text-error">delete</span>
+                <span className="text-[14px] font-inter text-error">Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

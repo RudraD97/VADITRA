@@ -19,25 +19,23 @@ export default function MiniPlayer({ seekBarProps }) {
   return (
     <div className="fixed bottom-[66px] left-0 right-0 z-40 px-3 pb-1" style={{ touchAction: 'manipulation' }}>
       <div
-        className="relative h-[64px] rounded-xl flex items-center px-4 gap-3 shadow-2xl overflow-hidden"
+        className="relative h-[64px] rounded-xl flex items-center px-4 gap-3 shadow-2xl overflow-hidden cursor-pointer"
         style={{
           background: 'rgba(40, 42, 41, 0.92)',
           backdropFilter: 'blur(24px)',
           border: '1px solid rgba(68, 73, 57, 0.3)',
         }}
+        onClick={() => setPlayerExpanded(true)}
       >
-        {/* Entire bar click = expand player (except controls area) */}
-        <div className="absolute inset-0 z-0 cursor-pointer" onClick={() => setPlayerExpanded(true)} />
-
         {/* Album Art */}
         <img
           src={currentTrack.cover || DEFAULT_COVER} onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }}
           alt="Now Playing"
-          className="w-10 h-10 rounded-full object-cover flex-shrink-0 relative z-10"
+          className="w-10 h-10 rounded-full object-cover flex-shrink-0 relative pointer-events-none"
         />
 
         {/* Track Info */}
-        <div className="flex-1 overflow-hidden relative z-10">
+        <div className="flex-1 overflow-hidden relative pointer-events-none">
           <p className="text-on-surface font-semibold text-[14px] truncate leading-tight">
             {currentTrack.title}
           </p>
@@ -48,7 +46,7 @@ export default function MiniPlayer({ seekBarProps }) {
 
         {/* Controls */}
         <div
-          className="flex items-center gap-1 relative z-20"
+          className="flex items-center gap-1 relative"
           onClick={e => { e.stopPropagation() }}
         >
           <button
@@ -82,10 +80,15 @@ export default function MiniPlayer({ seekBarProps }) {
         </div>
 
         {/* Progress bar at bottom */}
-        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/5 rounded-b-xl overflow-hidden">
+        <div className="absolute bottom-0 left-0 w-full h-[3px] rounded-b-xl overflow-hidden"
+          style={{ background: 'rgba(68,73,57,0.3)' }}>
           <div
-            className="h-full bg-primary-fixed-dim transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full transition-all duration-300"
+            style={{
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, #aed366, #c9f07e)',
+              boxShadow: '0 0 6px rgba(174,211,102,0.4)',
+            }}
           />
         </div>
       </div>

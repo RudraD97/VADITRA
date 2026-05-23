@@ -68,7 +68,16 @@ export function useFileUpload() {
             track,
           })
           addToLibrary(track)
-          saveAudioFile(track.id, entry.file)
+          ;(async () => {
+            let coverBlob = null
+            if (track.cover) {
+              try {
+                const resp = await fetch(track.cover)
+                coverBlob = await resp.blob()
+              } catch {}
+            }
+            saveAudioFile(track.id, entry.file, coverBlob)
+          })()
         } else {
           updateUpload(entry.id, {
             status: UPLOAD_STATUS.ERROR,

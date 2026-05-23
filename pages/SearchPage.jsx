@@ -1,9 +1,18 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import usePlayerStore from '../store/playerStore'
 import { formatTime, DEFAULT_COVER } from '../utils/audioUtils'
+import { searchOnlineSongs, getRecommendations } from '../utils/jiosaavnApi'
+import useOnlineStatus from '../hooks/useOnlineStatus'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
+  const [mode, setMode] = useState('local')
+  const [onlineResults, setOnlineResults] = useState([])
+  const [onlineLoading, setOnlineLoading] = useState(false)
+  const [recommendations, setRecommendations] = useState([])
+  const [recsLoading, setRecsLoading] = useState(false)
+  const recsFetched = useRef(false)
+  const onlineTimer = useRef(null)
   const inputRef = useRef(null)
   const library = usePlayerStore(s => s.library)
   const playlists = usePlayerStore(s => s.playlists)
@@ -15,6 +24,33 @@ export default function SearchPage() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  const handleOnlineSearch = useCallback((q) => {
+    if (onlineTimer.current) clearTimeout(onlineTimer.current)
+    if (!q.trim()) { setOnlineResults([]); setOnlineLoading(false); return }
+    setOnlineLoading(true)
+    onlineTimer.current = setTimeout(async () => {
+      const results = await searchOnlineSongs(q)
+      setOnlineResults(results)
+      setOnlineLoading(false)
+    }, 400)
+  }, [])
+
+  const isOnline = useOnlineStatus()
+
+  useEffect(() => {
+    if (mode === 'online' && !query.trim() && isOnline && !recsFetched.current) {
+      recsFetched.current = true
+      setRecsLoading(true)
+      getRecommendations(library).then(recs => {
+        setRecommendations(recs)
+        setRecsLoading(false)
+      })
+    }
+    if (mode === 'online' && query.trim()) {
+      recsFetched.current = false
+    }
+  }, [mode, query, isOnline, library])
 
   const results = useMemo(() => {
     if (!query.trim()) return { tracks: [], playlists: [] }
@@ -54,7 +90,7 @@ export default function SearchPage() {
             type="text"
             placeholder="Search tracks, artists, albums..."
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { const v = e.target.value; setQuery(v); if (mode === 'online') handleOnlineSearch(v) }}
             className="flex-1 bg-transparent text-on-surface text-[16px] font-inter outline-none placeholder:text-on-surface-variant/30"
           />
           {query && (
@@ -64,16 +100,34 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* Empty state */}
-        {!query.trim() && (
+        {/* ── Mode Toggle: Library | Explore ── */}
+        <div className="flex items-center gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(30, 32, 31, 0.6)' }}>
+          <button
+            onClick={() => { setMode('local'); setOnlineResults([]) }}
+            className="flex-1 py-2 text-[13px] font-inter font-medium rounded-lg transition-all"
+            style={{ background: mode === 'local' ? 'rgba(174,211,102,0.12)' : 'transparent', color: mode === 'local' ? '#aed366' : 'rgba(226,227,224,0.5)' }}
+          >
+            My Library
+          </button>
+          <button
+            onClick={() => { setMode('online'); if (query.trim()) handleOnlineSearch(query) }}
+            className="flex-1 py-2 text-[13px] font-inter font-medium rounded-lg transition-all"
+            style={{ background: mode === 'online' ? 'rgba(174,211,102,0.12)' : 'transparent', color: mode === 'online' ? '#aed366' : 'rgba(226,227,224,0.5)' }}
+          >
+            Explore
+          </button>
+        </div>
+
+        {/* ── Empty state (local mode) ── */}
+        {mode === 'local' && !query.trim() && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 mb-4">search</span>
             <p className="text-on-surface-variant/50 font-inter text-[15px]">Search your music library</p>
           </div>
         )}
 
-        {/* No results */}
-        {query.trim() && results.tracks.length === 0 && results.playlists.length === 0 && (
+        {/* ── No results (local mode) ── */}
+        {mode === 'local' && query.trim() && results.tracks.length === 0 && results.playlists.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-3">music_off</span>
             <p className="text-on-surface-variant/50 font-inter text-[15px]">No results for "{query}"</p>
@@ -81,8 +135,8 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Playlist results */}
-        {results.playlists.length > 0 && (
+        {/* ── Playlist results (local mode) ── */}
+        {mode === 'local' && results.playlists.length > 0 && (
           <section className="mb-8">
             <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium mb-3">
               Playlists ({results.playlists.length})
@@ -107,8 +161,8 @@ export default function SearchPage() {
           </section>
         )}
 
-        {/* Track results */}
-        {results.tracks.length > 0 && (
+        {/* ── Track results (local mode) ── */}
+        {mode === 'local' && results.tracks.length > 0 && (
           <section>
             <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium mb-3">
               Tracks ({results.tracks.length})
@@ -141,14 +195,17 @@ export default function SearchPage() {
                       </p>
                     </div>
 
-                    {/* Duration / playing indicator */}
-                    <div className="flex-shrink-0 text-right">
+                    {/* Duration / playing indicator + offline badge */}
+                    <div className="flex-shrink-0 flex items-center gap-2">
                       {isCurrentPlaying ? (
-                        <span className="material-symbols-outlined text-primary-fixed-dim text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
+                        <span className="material-symbols-outlined text-primary-fixed-dim text-[18px] w-[3.25rem] text-right" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
                       ) : (
-                        <span className="text-[12px] text-on-surface-variant/40 font-inter tabular-nums">
+                        <span className="inline-block w-[3.25rem] text-right text-[12px] text-on-surface-variant/40 font-inter tabular-nums">
                           {formatTime(track.duration)}
                         </span>
+                      )}
+                      {track._isDownloaded && (
+                        <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim/60">download</span>
                       )}
                     </div>
                   </div>
@@ -156,6 +213,158 @@ export default function SearchPage() {
               })}
             </div>
           </section>
+        )}
+
+        {/* ── Online section ── */}
+        {mode === 'online' && (
+          <>
+            {/* Offline banner */}
+            {!isOnline && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl" style={{ background: 'rgba(242, 139, 130, 0.1)', border: '1px solid rgba(242, 139, 130, 0.2)' }}>
+                <span className="material-symbols-outlined text-[20px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>wifi_off</span>
+                <div>
+                  <p className="text-[13px] font-medium font-inter text-error">You are offline</p>
+                  <p className="text-[11px] font-inter text-error/70">Connect to the internet to search Explore</p>
+                </div>
+              </div>
+            )}
+
+            {/* Online empty state — recommendations */}
+            {!query.trim() && (
+              <>
+                {recsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <span className="material-symbols-outlined text-[36px] text-primary-fixed-dim/50 mb-3 animate-spin">autorenew</span>
+                    <p className="text-on-surface-variant/40 font-inter text-[13px]">Loading recommendations...</p>
+                  </div>
+                ) : recommendations.length > 0 ? (
+                  <section>
+                    <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium mb-3">
+                      Recommended for you ({recommendations.length})
+                    </h3>
+                    <div className="space-y-1">
+                      {recommendations.map((track, index) => {
+                        const isCurrentTrack = currentTrack?.id === track.id
+                        const isCurrentPlaying = isCurrentTrack && isPlaying
+                        return (
+                          <div
+                            key={track.id}
+                            className="group flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-surface-container active:scale-[0.98]"
+                            onClick={() => { setQueue(recommendations, index); setPlayerExpanded(true) }}
+                          >
+                            <div className="w-11 h-11 rounded-lg overflow-hidden bg-surface-variant flex-shrink-0">
+                              <img src={track.cover || DEFAULT_COVER} alt="" className="w-full h-full object-cover" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="text-[15px] font-semibold truncate font-syne leading-tight" style={{ color: isCurrentTrack ? '#aed366' : '#e2e3e0' }}>
+                                {track.title}
+                              </p>
+                              <p className="text-[12px] text-on-surface-variant/60 truncate font-inter">{track.artist}</p>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center gap-2">
+                              {isCurrentPlaying ? (
+                                <span className="material-symbols-outlined text-primary-fixed-dim text-[18px] w-[3.25rem] text-right" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
+                              ) : (
+                                <span className="inline-block w-[3.25rem] text-right text-[12px] text-on-surface-variant/40 font-inter tabular-nums">{formatTime(track.duration)}</span>
+                              )}
+                              <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
+                                {track._language || 'stream'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    {!isOnline ? (
+                      <>
+                        <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 mb-4">wifi_off</span>
+                        <p className="text-on-surface-variant/50 font-inter text-[15px]">Connect to the internet to explore</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 mb-4">explore</span>
+                        <p className="text-on-surface-variant/50 font-inter text-[15px]">Search songs on Explore</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Online loading */}
+            {onlineLoading && query.trim() && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <span className="material-symbols-outlined text-[36px] text-primary-fixed-dim/50 mb-3 animate-spin">autorenew</span>
+                <p className="text-on-surface-variant/40 font-inter text-[13px]">Searching Explore...</p>
+              </div>
+            )}
+
+            {/* Online no results */}
+            {!onlineLoading && query.trim() && onlineResults.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-3">music_off</span>
+                <p className="text-on-surface-variant/50 font-inter text-[15px]">No online results for "{query}"</p>
+                <p className="text-on-surface-variant/30 font-inter text-[13px] mt-1">Try a different search term</p>
+              </div>
+            )}
+
+            {/* Online track results */}
+            {onlineResults.length > 0 && (
+              <section>
+                <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium mb-3">
+                  Explore ({onlineResults.length})
+                </h3>
+                <div className="space-y-1">
+                  {onlineResults.map((track, index) => {
+                    const isCurrentTrack = currentTrack?.id === track.id
+                    const isCurrentPlaying = isCurrentTrack && isPlaying
+                    return (
+                      <div
+                        key={track.id}
+                        className="group flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-surface-container active:scale-[0.98]"
+                        onClick={() => { setQueue(onlineResults, index); setPlayerExpanded(true) }}
+                      >
+                        {/* Album art */}
+                        <div className="w-11 h-11 rounded-lg overflow-hidden bg-surface-variant flex-shrink-0">
+                          <img src={track.cover || DEFAULT_COVER} alt="" className="w-full h-full object-cover" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 overflow-hidden">
+                          <p
+                            className="text-[15px] font-semibold truncate font-syne leading-tight"
+                            style={{ color: isCurrentTrack ? '#aed366' : '#e2e3e0' }}
+                          >
+                            {track.title}
+                          </p>
+                          <p className="text-[12px] text-on-surface-variant/60 truncate font-inter">
+                            {track.artist}
+                          </p>
+                        </div>
+
+                        {/* Duration / playing indicator + badge */}
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                          {isCurrentPlaying ? (
+                            <span className="material-symbols-outlined text-primary-fixed-dim text-[18px] w-[3.25rem] text-right" style={{ fontVariationSettings: "'FILL' 1" }}>equalizer</span>
+                          ) : (
+                            <span className="inline-block w-[3.25rem] text-right text-[12px] text-on-surface-variant/40 font-inter tabular-nums">
+                              {formatTime(track.duration)}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-inter px-1.5 py-0.5 rounded text-primary-fixed-dim/60" style={{ background: 'rgba(174,211,102,0.08)', border: '1px solid rgba(174,211,102,0.15)' }}>
+                            {track._language || 'stream'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>
