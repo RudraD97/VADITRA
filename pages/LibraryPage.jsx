@@ -26,11 +26,24 @@ export default function LibraryPage() {
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
   const [menuTrackId, setMenuTrackId] = useState(null)
   const [playlistMenuId, setPlaylistMenuId] = useState(null)
+  const [showAllSongs, setShowAllSongs] = useState(false)
+  const songRefs = useRef([])
 
   const quote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], [])
 
   const sorted = useMemo(() => [...library].reverse(), [library])
   const likedTracks = useMemo(() => library.filter(t => t.liked), [library])
+
+  const displaySongs = useMemo(() => showAllSongs ? sorted : sorted.slice(0, 5), [sorted, showAllSongs])
+
+  useEffect(() => {
+    songRefs.current = songRefs.current.slice(0, displaySongs.length)
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => e.target.classList.toggle('song-visible', e.isIntersecting))
+    }, { threshold: 0.25 })
+    songRefs.current.forEach(el => el && observer.observe(el))
+    return () => observer.disconnect()
+  }, [displaySongs.length])
 
   const sectionRef = useRef(null)
 
@@ -129,14 +142,15 @@ export default function LibraryPage() {
           )}
 
           {library.length > 0 && (
-            <div className="space-y-px">
-              {sorted.map((track, i) => {
+            <div className="space-y-px max-h-[400px] overflow-y-auto hide-scrollbar snap-scroll rounded-2xl">
+              {displaySongs.map((track, i) => {
                 const isActive = currentTrack?.id === track.id
                 const isMenuOpen = menuTrackId === track.id
                 return (
                   <div
                     key={track.id}
-                    className="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer active:scale-[0.99] transition-all"
+                    ref={el => songRefs.current[i] = el}
+                    className="song-enter group relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer active:scale-[0.99] transition-all"
                     style={{
                       background: isActive
                         ? 'linear-gradient(135deg, rgba(174,211,102,0.12), rgba(174,211,102,0.04))'
@@ -188,6 +202,17 @@ export default function LibraryPage() {
                   </div>
                 )
               })}
+              {sorted.length > 5 && (
+                <button
+                  onClick={() => setShowAllSongs(!showAllSongs)}
+                  className="w-full text-left px-3 py-3 text-[13px] font-semibold font-inter transition-all rounded-xl"
+                  style={{ color: '#aed366', scrollSnapAlign: 'none' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(174,211,102,0.08)'; e.currentTarget.style.color = '#c9f07e' }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#aed366' }}
+                >
+                  {showAllSongs ? 'Show less ↑' : `Show all ${sorted.length} songs →`}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -275,7 +300,7 @@ export default function LibraryPage() {
           )}
 
           {playlists.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[240px] overflow-y-auto hide-scrollbar snap-scroll rounded-2xl">
               {playlists.map(playlist => {
                 const isMenuOpen = playlistMenuId === playlist.id
                 return (
@@ -350,10 +375,10 @@ export default function LibraryPage() {
                 <span className="text-[13px] font-normal font-inter" style={{ WebkitTextFillColor: 'rgba(196,201,181,0.4)' }}>({likedTracks.length})</span>
               </h2>
             </div>
-            <div className="space-y-px">
+            <div className="space-y-px max-h-[220px] overflow-y-auto hide-scrollbar snap-scroll rounded-2xl">
               {likedTracks.slice(0, 5).map((track, i) => (
                 <div key={track.id}
-                  className="group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer active:scale-[0.99] transition-all"
+                  className="song-enter group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer active:scale-[0.99] transition-all"
                   style={{
                     borderLeft: '3px solid rgba(174,211,102,0.15)',
                   }}
@@ -373,7 +398,7 @@ export default function LibraryPage() {
                 <button
                   onClick={() => { setQueue(likedTracks, 0); setPlayerExpanded(true) }}
                   className="w-full text-left px-3 py-3 text-[13px] font-semibold font-inter transition-all rounded-xl"
-                  style={{ color: '#aed366' }}
+                  style={{ color: '#aed366', scrollSnapAlign: 'none' }}
                   onMouseOver={e => { e.currentTarget.style.background = 'rgba(174,211,102,0.08)'; e.currentTarget.style.color = '#c9f07e' }}
                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#aed366' }}
                 >
