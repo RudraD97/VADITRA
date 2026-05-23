@@ -6,12 +6,11 @@ import useOnlineStatus from '../hooks/useOnlineStatus'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
-  const [mode, setMode] = useState('local')
+  const [mode, setMode] = useState(navigator.onLine ? 'online' : 'local')
   const [onlineResults, setOnlineResults] = useState([])
   const [onlineLoading, setOnlineLoading] = useState(false)
   const [recommendations, setRecommendations] = useState([])
   const [recsLoading, setRecsLoading] = useState(false)
-  const recsFetched = useRef(false)
   const onlineTimer = useRef(null)
   const inputRef = useRef(null)
   const library = usePlayerStore(s => s.library)
@@ -20,10 +19,7 @@ export default function SearchPage() {
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const setQueue = usePlayerStore(s => s.setQueue)
   const setPlayerExpanded = usePlayerStore(s => s.setPlayerExpanded)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+  const activeView = usePlayerStore(s => s.activeView)
 
   const handleOnlineSearch = useCallback((q) => {
     if (onlineTimer.current) clearTimeout(onlineTimer.current)
@@ -36,21 +32,25 @@ export default function SearchPage() {
     }, 400)
   }, [])
 
+  const handleRefreshRecs = useCallback(() => {
+    setRecsLoading(true)
+    getRecommendations(library).then(recs => {
+      setRecommendations(recs)
+      setRecsLoading(false)
+    })
+  }, [library])
+
   const isOnline = useOnlineStatus()
 
   useEffect(() => {
-    if (mode === 'online' && !query.trim() && isOnline && !recsFetched.current) {
-      recsFetched.current = true
+    if (mode === 'online' && !query.trim() && isOnline && activeView === 'search') {
       setRecsLoading(true)
       getRecommendations(library).then(recs => {
         setRecommendations(recs)
         setRecsLoading(false)
       })
     }
-    if (mode === 'online' && query.trim()) {
-      recsFetched.current = false
-    }
-  }, [mode, query, isOnline, library])
+  }, [activeView, mode, query, isOnline, library])
 
   const results = useMemo(() => {
     if (!query.trim()) return { tracks: [], playlists: [] }
@@ -110,7 +110,7 @@ export default function SearchPage() {
             My Library
           </button>
           <button
-            onClick={() => { setMode('online'); if (query.trim()) handleOnlineSearch(query) }}
+            onClick={() => { setMode('online'); if (query.trim()) handleOnlineSearch(query); else handleRefreshRecs() }}
             className="flex-1 py-2 text-[13px] font-inter font-medium rounded-lg transition-all"
             style={{ background: mode === 'online' ? 'rgba(174,211,102,0.12)' : 'transparent', color: mode === 'online' ? '#aed366' : 'rgba(226,227,224,0.5)' }}
           >
@@ -239,9 +239,14 @@ export default function SearchPage() {
                   </div>
                 ) : recommendations.length > 0 ? (
                   <section>
-                    <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium mb-3">
-                      Recommended for you ({recommendations.length})
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-[12px] text-on-surface-variant uppercase tracking-[0.1em] font-inter font-medium">
+                        Recommended for you ({recommendations.length})
+                      </h3>
+                      <button onClick={handleRefreshRecs} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-on-surface-variant/40 hover:text-primary-fixed-dim">
+                        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>refresh</span>
+                      </button>
+                    </div>
                     <div className="space-y-1">
                       {recommendations.map((track, index) => {
                         const isCurrentTrack = currentTrack?.id === track.id
