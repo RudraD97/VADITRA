@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import usePlayerStore from './store/playerStore'
 import { useAudioEngine } from './hooks/useAudioEngine'
+import { useBackgroundPlayback } from './hooks/useBackgroundPlayback'
 import { useVisualizer } from './hooks/useVisualizer'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSeekBar } from './hooks/useSeekBar'
@@ -50,6 +51,7 @@ export default function App() {
   }, [])
 
   const { audioRef, seekTo } = useAudioEngine()
+  useBackgroundPlayback(audioRef)
   const { frequencyData, initContext } = useVisualizer(audioRef)
   const seekBarProps = useSeekBar(seekTo)
   useKeyboardShortcuts(seekTo)
