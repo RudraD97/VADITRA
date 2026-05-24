@@ -62,7 +62,7 @@ export default function DownloadPage() {
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_download</span>
               <p className="text-on-surface-variant/50 font-inter text-[15px]">No downloads yet</p>
-              <p className="text-on-surface-variant/30 font-inter text-[13px] mt-1">Download songs from JioSaavn to listen offline</p>
+              <p className="text-on-surface-variant/30 font-inter text-[13px] mt-1">No downloaded tracks yet</p>
             </div>
           )}
 

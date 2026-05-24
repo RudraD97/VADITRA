@@ -19,6 +19,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
 
   const upcomingLocal = queue.slice(queueIndex + 1, queueIndex + 6)
   const [upcomingRelated, setUpcomingRelated] = useState([])
+  const [relatedError, setRelatedError] = useState(null)
   const [showHeaderMenu, setShowHeaderMenu] = useState(false)
   const [closing, setClosing] = useState(false)
   const [downloading, setDownloading] = useState(false)
@@ -39,9 +40,19 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
 
   useEffect(() => {
     if (currentTrack?._source === 'online') {
-      getRelatedSongs(currentTrack).then(setUpcomingRelated)
+      setRelatedError(null)
+      getRelatedSongs(currentTrack).then(result => {
+        if (result.success) {
+          setUpcomingRelated(result.data)
+          setRelatedError(null)
+        } else {
+          setUpcomingRelated([])
+          setRelatedError(result.error || 'Could not load related songs')
+        }
+      })
     } else {
       setUpcomingRelated([])
+      setRelatedError(null)
     }
   }, [currentTrack?.id, currentTrack?._source])
 
@@ -382,7 +393,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
         </section>
 
         {/* ── Upcoming Queue ─────────────────────────────────────────────── */}
-        {upcoming.length > 0 && (
+        {(upcoming.length > 0 || relatedError) && (
           <section
             className="px-5 mt-6 mb-6"
             style={{ animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
@@ -393,6 +404,12 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
             </h3>
             {/* Section divider */}
             <div className="mb-4 mt-0.5" style={{ height: '1px', background: 'linear-gradient(90deg, rgba(174,211,102,0.2), rgba(174,211,102,0.05), transparent)' }} />
+            {relatedError && (
+              <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-xl" style={{ background: 'rgba(242, 139, 130, 0.08)', border: '1px solid rgba(242, 139, 130, 0.15)' }}>
+                <span className="material-symbols-outlined text-[14px] text-error/60">cloud_off</span>
+                <p className="text-[11px] text-error/70 font-inter">{relatedError}</p>
+              </div>
+            )}
             <div className="space-y-1">
               {upcoming.map((track, i) => (
                 <div key={track.id + i} className="flex items-center gap-3 px-1.5 py-1.5 rounded-lg cursor-pointer hover:bg-surface-container/60 transition-all active:scale-[0.98]" style={{ opacity: 1 - i * 0.15 }} onClick={() => { setQueue(upcoming, i); setPlayerExpanded(true) }}>

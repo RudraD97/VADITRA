@@ -1,6 +1,31 @@
 import { saveAudioFile } from './indexedDB'
 
-const BASE = 'https://saavn.sumit.co/api'
+const BASE_URLS = [
+  'https://saavn.sumit.co/api',
+]
+
+async function fetchWithFallback(path) {
+  const errors = []
+  for (const base of BASE_URLS) {
+    try {
+      const url = `${base}${path}`
+      const res = await fetch(url)
+      if (!res.ok) {
+        errors.push(`${base} returned ${res.status}`)
+        continue
+      }
+      const body = await res.json()
+      if (!body?.success || !body?.data) {
+        errors.push(`${base} returned invalid data`)
+        continue
+      }
+      return { data: body.data, proxyUsed: base }
+    } catch (err) {
+      errors.push(`${base} — ${err.message || 'network error'}`)
+    }
+  }
+  return { data: null, error: errors.join('; '), proxyUsed: null }
+}
 
 export function buildOnlineTrack(song) {
   const cover = song.image?.find(i => i.quality === '500x500')?.url
@@ -28,27 +53,22 @@ export function buildOnlineTrack(song) {
 }
 
 export async function searchOnlineSongs(query, limit = 20) {
-  if (!query?.trim()) return []
-  try {
-    const url = `${BASE}/search/songs?query=${encodeURIComponent(query.trim())}&limit=${limit}`
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const body = await res.json()
-    if (!body?.success || !body?.data?.results) return []
-    const tracks = body.data.results.map(buildOnlineTrack)
-    const seenIds = new Set()
-    const seenTitles = new Set()
-    return tracks.filter(t => {
-      if (seenIds.has(t.id)) return false
-      seenIds.add(t.id)
-      const titleKey = (t.title || '').toLowerCase().trim()
-      if (seenTitles.has(titleKey)) return false
-      seenTitles.add(titleKey)
-      return true
-    })
-  } catch {
-    return []
-  }
+  if (!query?.trim()) return { success: false, data: [], error: null, proxyUsed: null }
+  const { data, error, proxyUsed } = await fetchWithFallback(`/search/songs?query=${encodeURIComponent(query.trim())}&limit=${limit}`)
+  if (!data) return { success: false, data: [], error: error || 'Search unavailable', proxyUsed: null }
+  const rawTracks = data.results || []
+  const tracks = rawTracks.map(buildOnlineTrack)
+  const seenIds = new Set()
+  const seenTitles = new Set()
+  const deduped = tracks.filter(t => {
+    if (seenIds.has(t.id)) return false
+    seenIds.add(t.id)
+    const titleKey = (t.title || '').toLowerCase().trim()
+    if (seenTitles.has(titleKey)) return false
+    seenTitles.add(titleKey)
+    return true
+  })
+  return { success: true, data: deduped, error: null, proxyUsed }
 }
 
 const TRENDING_SEEDS = [
@@ -60,67 +80,62 @@ const TRENDING_SEEDS = [
 
 export async function getRecommendations() {
   const chosen = [...TRENDING_SEEDS].sort(() => Math.random() - 0.5).slice(0, 3)
-  try {
-    const results = await Promise.allSettled(
-      chosen.map(q => searchOnlineSongs(q, 3))
-    )
-    const all = results
-      .filter(r => r.status === 'fulfilled')
-      .flatMap(r => r.value)
-    const seen = new Set()
-    return all.filter(t => {
-      const key = (t.title || '').toLowerCase().trim()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    }).slice(0, 5)
-  } catch {
-    return []
+  const results = await Promise.allSettled(
+    chosen.map(q => searchOnlineSongs(q, 3))
+  )
+  const all = []
+  let lastError = null
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value.success) {
+      all.push(...r.value.data)
+    } else if (r.status === 'fulfilled' && r.value.error) {
+      lastError = r.value.error
+    }
   }
+  if (all.length === 0) {
+    return { success: false, data: [], error: lastError || 'Recommendations unavailable', proxyUsed: null }
+  }
+  const seen = new Set()
+  const deduped = all.filter(t => {
+    const key = (t.title || '').toLowerCase().trim()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  }).slice(0, 5)
+  return { success: true, data: deduped, error: null, proxyUsed: results.find(r => r.status === 'fulfilled' && r.value.proxyUsed)?.value?.proxyUsed || null }
 }
 
 export async function getRelatedSongs(track, limit = 5) {
-  if (!track || track._source !== 'online') return []
+  if (!track || track._source !== 'online') return { success: false, data: [], error: null, proxyUsed: null }
   const artistName = track.artist?.split(',')[0]?.trim()
-  if (!artistName) return []
-  try {
-    const url = `${BASE}/search/songs?query=${encodeURIComponent(artistName)}&limit=15`
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const body = await res.json()
-    if (!body?.success || !body?.data?.results) return []
+  if (!artistName) return { success: false, data: [], error: null, proxyUsed: null }
 
-    const currentTitle = track.title?.toLowerCase() || ''
-    const related = body.data.results
-      .filter(s => s.name?.toLowerCase() !== currentTitle)
-      .slice(0, limit + 5)
-      .map(buildOnlineTrack)
-    const seenIds = new Set()
-    const seenTitles = new Set()
-    return related.filter(t => {
-      if (seenIds.has(t.id)) return false
-      seenIds.add(t.id)
-      const titleKey = (t.title || '').toLowerCase().trim()
-      if (seenTitles.has(titleKey)) return false
-      seenTitles.add(titleKey)
-      return true
-    }).slice(0, limit)
-  } catch {
-    return []
-  }
+  const { data, error, proxyUsed } = await fetchWithFallback(`/search/songs?query=${encodeURIComponent(artistName)}&limit=15`)
+  if (!data) return { success: false, data: [], error: error || 'Unable to load related songs', proxyUsed: null }
+
+  const currentTitle = track.title?.toLowerCase() || ''
+  const rawTracks = data.results || []
+  const related = rawTracks
+    .filter(s => s.name?.toLowerCase() !== currentTitle)
+    .slice(0, limit + 5)
+    .map(buildOnlineTrack)
+  const seenIds = new Set()
+  const seenTitles = new Set()
+  const deduped = related.filter(t => {
+    if (seenIds.has(t.id)) return false
+    seenIds.add(t.id)
+    const titleKey = (t.title || '').toLowerCase().trim()
+    if (seenTitles.has(titleKey)) return false
+    seenTitles.add(titleKey)
+    return true
+  }).slice(0, limit)
+  return { success: true, data: deduped, error: null, proxyUsed }
 }
 
 export async function getOnlineSongDetails(id) {
-  try {
-    const url = `${BASE}/songs/${encodeURIComponent(id)}`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const body = await res.json()
-    if (!body?.success || !body?.data) return null
-    return buildOnlineTrack(body.data)
-  } catch {
-    return null
-  }
+  const { data, error } = await fetchWithFallback(`/songs/${encodeURIComponent(id)}`)
+  if (!data) return { success: false, data: null, error: error || 'Unable to fetch song details', proxyUsed: null }
+  return { success: true, data: buildOnlineTrack(data), error: null, proxyUsed: null }
 }
 
 export async function downloadOnlineTrack(track) {

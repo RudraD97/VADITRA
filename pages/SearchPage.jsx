@@ -9,8 +9,10 @@ export default function SearchPage() {
   const [mode, setMode] = useState(navigator.onLine ? 'online' : 'local')
   const [onlineResults, setOnlineResults] = useState([])
   const [onlineLoading, setOnlineLoading] = useState(false)
+  const [onlineError, setOnlineError] = useState(null)
   const [recommendations, setRecommendations] = useState([])
   const [recsLoading, setRecsLoading] = useState(false)
+  const [recsError, setRecsError] = useState(null)
   const onlineTimer = useRef(null)
   const inputRef = useRef(null)
   const library = usePlayerStore(s => s.library)
@@ -22,11 +24,18 @@ export default function SearchPage() {
 
   const handleOnlineSearch = useCallback((q) => {
     if (onlineTimer.current) clearTimeout(onlineTimer.current)
-    if (!q.trim()) { setOnlineResults([]); setOnlineLoading(false); return }
+    if (!q.trim()) { setOnlineResults([]); setOnlineError(null); setOnlineLoading(false); return }
     setOnlineLoading(true)
+    setOnlineError(null)
     onlineTimer.current = setTimeout(async () => {
-      const results = await searchOnlineSongs(q)
-      setOnlineResults(results)
+      const result = await searchOnlineSongs(q)
+      if (result.success) {
+        setOnlineResults(result.data)
+        setOnlineError(null)
+      } else {
+        setOnlineResults([])
+        setOnlineError(result.error || 'Search is temporarily unavailable')
+      }
       setOnlineLoading(false)
     }, 400)
   }, [])
@@ -35,8 +44,15 @@ export default function SearchPage() {
 
   const fetchRecommendations = useCallback(() => {
     setRecsLoading(true)
-    getRecommendations().then(recs => {
-      setRecommendations(recs)
+    setRecsError(null)
+    getRecommendations().then(result => {
+      if (result.success) {
+        setRecommendations(result.data)
+        setRecsError(null)
+      } else {
+        setRecommendations([])
+        setRecsError(result.error || 'Recommendations unavailable')
+      }
       setRecsLoading(false)
     })
   }, [library])
@@ -104,7 +120,7 @@ export default function SearchPage() {
         {/* ── Mode Toggle: Library | Explore ── */}
         <div className="flex items-center gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(30, 32, 31, 0.6)' }}>
           <button
-            onClick={() => { setMode('local'); setOnlineResults([]) }}
+            onClick={() => { setMode('local'); setOnlineResults([]); setOnlineError(null); setRecsError(null) }}
             className="flex-1 py-2 text-[13px] font-inter font-medium rounded-lg transition-all"
             style={{ background: mode === 'local' ? 'rgba(174,211,102,0.12)' : 'transparent', color: mode === 'local' ? '#aed366' : 'rgba(226,227,224,0.5)' }}
           >
@@ -230,6 +246,34 @@ export default function SearchPage() {
               </div>
             )}
 
+            {/* API error banner */}
+            {isOnline && (onlineError || recsError) && !query.trim() && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl" style={{ background: 'rgba(242, 139, 130, 0.1)', border: '1px solid rgba(242, 139, 130, 0.2)' }}>
+                <span className="material-symbols-outlined text-[20px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_off</span>
+                <div className="flex-1">
+                  <p className="text-[13px] font-medium font-inter text-error">Online search unavailable</p>
+                  <p className="text-[11px] font-inter text-error/70">{recsError || onlineError}</p>
+                </div>
+                <button onClick={handleRefreshRecs} className="px-3 py-1.5 rounded-lg text-[12px] font-medium font-inter text-error hover:bg-error/10 transition-colors active:scale-95">
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Online search error banner */}
+            {isOnline && onlineError && query.trim() && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl" style={{ background: 'rgba(242, 139, 130, 0.1)', border: '1px solid rgba(242, 139, 130, 0.2)' }}>
+                <span className="material-symbols-outlined text-[20px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_off</span>
+                <div className="flex-1">
+                  <p className="text-[13px] font-medium font-inter text-error">Search failed</p>
+                  <p className="text-[11px] font-inter text-error/70">{onlineError}</p>
+                </div>
+                <button onClick={() => handleOnlineSearch(query)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium font-inter text-error hover:bg-error/10 transition-colors active:scale-95">
+                  Retry
+                </button>
+              </div>
+            )}
+
             {/* Online empty state — recommendations */}
             {!query.trim() && (
               <>
@@ -308,8 +352,8 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* Online no results */}
-            {!onlineLoading && query.trim() && onlineResults.length === 0 && (
+            {/* Online no results (only when no error) */}
+            {!onlineLoading && !onlineError && query.trim() && onlineResults.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-3">music_off</span>
                 <p className="text-on-surface-variant/50 font-inter text-[15px]">No online results for "{query}"</p>
