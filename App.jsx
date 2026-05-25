@@ -1,5 +1,6 @@
 // App.jsx — Root component: wires audio engine, routing, and layout
 import React, { useEffect, useState } from 'react'
+import { App as CapacitorApp } from '@capacitor/app'
 import usePlayerStore from './store/playerStore'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useBackgroundPlayback } from './hooks/useBackgroundPlayback'
@@ -34,6 +35,19 @@ export default function App() {
   const restoreTrackSrc = usePlayerStore(s => s.restoreTrackSrc)
 
   useEffect(() => { notifyDevice() }, [])
+
+  useEffect(() => {
+    const handler = CapacitorApp.addListener('backButton', () => {
+      const { isPlayerExpanded, activeView, setPlayerExpanded, setActiveView } = usePlayerStore.getState()
+      if (isPlayerExpanded) {
+        setPlayerExpanded(false)
+        setActiveView('home')
+      } else if (activeView !== 'home') {
+        setActiveView('home')
+      }
+    })
+    return () => { handler.then(h => h.remove()) }
+  }, [])
 
   useEffect(() => {
     let cancelled = false

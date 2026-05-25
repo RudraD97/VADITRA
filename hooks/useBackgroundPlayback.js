@@ -1,10 +1,6 @@
 import { useEffect, useRef } from 'react'
 import usePlayerStore from '../store/playerStore'
-
-let ForegroundService = null
-try {
-  ForegroundService = require('@capawesome-team/capacitor-android-foreground-service').ForegroundService
-} catch {}
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service'
 
 const MEDIA_PLAYBACK_TYPE = 1
 const BTN_PLAY_PAUSE = 10
@@ -34,6 +30,7 @@ function getServiceOptions(track, playing) {
 export function useBackgroundPlayback(audioRef) {
   const prevTrackIdRef = useRef(null)
   const serviceStartedRef = useRef(false)
+  const permissionRequestedRef = useRef(false)
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -59,26 +56,22 @@ export function useBackgroundPlayback(audioRef) {
       })
     }
 
-    if (ForegroundService) {
-      ForegroundService.addListener('buttonClicked', ({ buttonId }) => {
-        switch (buttonId) {
-          case BTN_PLAY_PAUSE:
-            usePlayerStore.getState().togglePlay()
-            break
-          case BTN_PREV:
-            usePlayerStore.getState().playPrevious()
-            break
-          case BTN_NEXT:
-            usePlayerStore.getState().playNext()
-            break
-        }
-      }).catch(() => {})
-    }
+    ForegroundService.addListener('buttonClicked', ({ buttonId }) => {
+      switch (buttonId) {
+        case BTN_PLAY_PAUSE:
+          usePlayerStore.getState().togglePlay()
+          break
+        case BTN_PREV:
+          usePlayerStore.getState().playPrevious()
+          break
+        case BTN_NEXT:
+          usePlayerStore.getState().playNext()
+          break
+      }
+    }).catch(() => {})
 
     return () => {
-      if (ForegroundService) {
-        ForegroundService.removeAllListeners().catch(() => {})
-      }
+      ForegroundService.removeAllListeners().catch(() => {})
     }
   }, [audioRef])
 
@@ -103,18 +96,20 @@ export function useBackgroundPlayback(audioRef) {
           navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
         }
 
-        if (ForegroundService) {
-          if (track) {
-            if (!serviceStartedRef.current) {
-              ForegroundService.startForegroundService(getServiceOptions(track, playing)).catch(() => {})
-              serviceStartedRef.current = true
-            } else {
-              ForegroundService.updateForegroundService(getServiceOptions(track, playing)).catch(() => {})
+        if (track) {
+          if (!serviceStartedRef.current) {
+            if (!permissionRequestedRef.current) {
+              permissionRequestedRef.current = true
+              ForegroundService.requestPermissions().catch(() => {})
             }
-          } else if (!track && serviceStartedRef.current) {
-            ForegroundService.stopForegroundService().catch(() => {})
-            serviceStartedRef.current = false
+            ForegroundService.startForegroundService(getServiceOptions(track, playing)).catch(() => {})
+            serviceStartedRef.current = true
+          } else {
+            ForegroundService.updateForegroundService(getServiceOptions(track, playing)).catch(() => {})
           }
+        } else if (!track && serviceStartedRef.current) {
+          ForegroundService.stopForegroundService().catch(() => {})
+          serviceStartedRef.current = false
         }
 
         prevTrackIdRef.current = trackId
@@ -125,7 +120,7 @@ export function useBackgroundPlayback(audioRef) {
 
   useEffect(() => {
     return () => {
-      if (ForegroundService && serviceStartedRef.current) {
+      if (serviceStartedRef.current) {
         ForegroundService.stopForegroundService().catch(() => {})
         serviceStartedRef.current = false
       }
