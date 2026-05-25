@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import usePlayerStore from '../store/playerStore'
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service'
 
-const MEDIA_PLAYBACK_TYPE = 1
 const BTN_PLAY_PAUSE = 10
 const BTN_PREV = 20
 const BTN_NEXT = 30
@@ -21,7 +20,6 @@ function getServiceOptions(track, playing) {
     title: track?.title || 'VADITRA',
     body: track ? `${track.artist || 'Unknown Artist'} • ${track.album || 'VADITRA'}` : 'No track selected',
     smallIcon: 'ic_notification',
-    serviceType: MEDIA_PLAYBACK_TYPE,
     silent: true,
     buttons: getButtons(playing),
   }
@@ -30,30 +28,33 @@ function getServiceOptions(track, playing) {
 export function useBackgroundPlayback(audioRef) {
   const prevTrackIdRef = useRef(null)
   const serviceStartedRef = useRef(false)
-  const permissionRequestedRef = useRef(false)
 
   useEffect(() => {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => {
-        usePlayerStore.getState().play()
-      })
-      navigator.mediaSession.setActionHandler('pause', () => {
-        usePlayerStore.getState().pause()
-      })
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
-        usePlayerStore.getState().playPrevious()
-      })
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        usePlayerStore.getState().playNext()
-      })
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime != null) {
-          usePlayerStore.setState({ currentTime: details.seekTime })
-          if (audioRef?.current) {
-            audioRef.current.currentTime = details.seekTime
+    try {
+      if (navigator.mediaSession) {
+        navigator.mediaSession.setActionHandler('play', () => {
+          usePlayerStore.getState().play()
+        })
+        navigator.mediaSession.setActionHandler('pause', () => {
+          usePlayerStore.getState().pause()
+        })
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          usePlayerStore.getState().playPrevious()
+        })
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          usePlayerStore.getState().playNext()
+        })
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.seekTime != null) {
+            usePlayerStore.setState({ currentTime: details.seekTime })
+            if (audioRef?.current) {
+              audioRef.current.currentTime = details.seekTime
+            }
           }
-        }
-      })
+        })
+      }
+    } catch (e) {
+      console.warn('MediaSession not supported:', e)
     }
 
     ForegroundService.addListener('buttonClicked', ({ buttonId }) => {
@@ -82,34 +83,37 @@ export function useBackgroundPlayback(audioRef) {
         const prevTrackId = prevTrackIdRef.current
         const trackId = track?.id
 
-        if ('mediaSession' in navigator) {
-          if (track && trackId !== prevTrackId) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-              title: track.title || '',
-              artist: track.artist || '',
-              album: track.album || '',
-              artwork: track.cover
-                ? [{ src: track.cover, sizes: '512x512', type: 'image/jpeg' }]
-                : [],
-            })
+        try {
+          if (navigator.mediaSession) {
+            if (track && trackId !== prevTrackId) {
+              navigator.mediaSession.metadata = new MediaMetadata({
+                title: track.title || '',
+                artist: track.artist || '',
+                album: track.album || '',
+                artwork: track.cover
+                  ? [{ src: track.cover, sizes: '512x512', type: 'image/jpeg' }]
+                  : [],
+              })
+            }
+            navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
           }
-          navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
+        } catch (e) {
+          console.warn('MediaSession update failed:', e)
         }
 
         if (track) {
           if (!serviceStartedRef.current) {
-            if (!permissionRequestedRef.current) {
-              permissionRequestedRef.current = true
-              ForegroundService.requestPermissions().catch(() => {})
-            }
-            ForegroundService.startForegroundService(getServiceOptions(track, playing)).catch(() => {})
             serviceStartedRef.current = true
+            ForegroundService.startForegroundService(getServiceOptions(track, playing))
+              .catch((e) => { console.warn('ForegroundService start:', e) })
           } else {
-            ForegroundService.updateForegroundService(getServiceOptions(track, playing)).catch(() => {})
+            ForegroundService.updateForegroundService(getServiceOptions(track, playing))
+              .catch((e) => { console.warn('ForegroundService update:', e) })
           }
         } else if (!track && serviceStartedRef.current) {
-          ForegroundService.stopForegroundService().catch(() => {})
           serviceStartedRef.current = false
+          ForegroundService.stopForegroundService()
+            .catch((e) => { console.warn('ForegroundService stop:', e) })
         }
 
         prevTrackIdRef.current = trackId
