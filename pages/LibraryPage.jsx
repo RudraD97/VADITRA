@@ -16,7 +16,7 @@ export default function LibraryPage() {
   const {
     library, setQueue, toggleLike, currentTrack, deleteTrack,
     playlists, createPlaylist, deletePlaylist, addTrackToPlaylist,
-    setActivePlaylist, setActiveView, setPlayerExpanded,
+    setActivePlaylist, setActiveView, setPlayerExpanded, toggleShuffle,
   } = usePlayerStore()
 
   const { handleFiles, openFilePicker, onFileInputChange, fileInputRef } = useFileUpload()
@@ -50,6 +50,14 @@ export default function LibraryPage() {
   const handlePlay = (index) => {
     setQueue(sorted, index)
     setPlayerExpanded(true)
+  }
+
+  const handleShuffleAll = () => {
+    if (!sorted.length) return
+    setQueue(sorted, 0)
+    if (!usePlayerStore.getState().isShuffle) {
+      toggleShuffle()
+    }
   }
 
   const handleShare = useCallback(async (track) => {
@@ -121,7 +129,13 @@ export default function LibraryPage() {
               Your Songs
               <span className="text-[13px] text-on-surface-variant/40 font-inter font-normal ml-1" style={{ WebkitTextFillColor: 'rgba(196,201,181,0.4)' }}>({library.length})</span>
             </h2>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {library.length > 1 && (
+                <button onClick={handleShuffleAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] text-primary-fixed-dim font-medium transition-all hover:bg-primary-fixed-dim/15 active:scale-95">
+                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>shuffle</span>
+                  Shuffle
+                </button>
+              )}
               <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.aac,.m4a" onChange={onFileInputChange} className="hidden" multiple />
               <button onClick={openFilePicker} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] text-primary-fixed-dim font-medium transition-all hover:bg-primary-fixed-dim/15 active:scale-95">
                 <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>

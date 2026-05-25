@@ -105,10 +105,7 @@ const usePlayerStore = create(
           } while (nextIndex === queueIndex && queue.length > 1)
         } else {
           nextIndex = queueIndex + 1
-          if (nextIndex >= queue.length) {
-            if (repeatMode === 'all') nextIndex = 0
-            else { set({ isPlaying: false }); return }
-          }
+          if (nextIndex >= queue.length) nextIndex = 0
         }
 
         const nextTrack = queue[nextIndex]
