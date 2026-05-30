@@ -14,7 +14,12 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "MediaSessionPlugin")
 public class MediaSessionPlugin extends Plugin {
 
+    private static MediaSession.Token sessionToken = null;
     private MediaSession mediaSession;
+
+    public static MediaSession.Token getSessionToken() {
+        return sessionToken;
+    }
 
     @Override
     public void load() {
@@ -52,6 +57,7 @@ public class MediaSessionPlugin extends Plugin {
         });
         mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSession.setActive(true);
+        sessionToken = mediaSession.getSessionToken();
     }
 
     @PluginMethod
@@ -59,6 +65,9 @@ public class MediaSessionPlugin extends Plugin {
         boolean active = call.getBoolean("active", true);
         if (mediaSession != null) {
             mediaSession.setActive(active);
+            if (active) {
+                sessionToken = mediaSession.getSessionToken();
+            }
         }
         call.resolve();
     }
@@ -107,6 +116,7 @@ public class MediaSessionPlugin extends Plugin {
             mediaSession.setActive(false);
             mediaSession.release();
             mediaSession = null;
+            sessionToken = null;
         }
         call.resolve();
     }

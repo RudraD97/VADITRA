@@ -27,6 +27,7 @@ function getServiceOptions(track, playing) {
     smallIcon: 'ic_notification',
     silent: true,
     buttons: getButtons(playing),
+    serviceType: 32,
   }
 }
 
@@ -46,10 +47,6 @@ export function useBackgroundPlayback(audioRef) {
       description: 'Now playing notification',
     }).then(() => log('Notification channel created'))
       .catch((e) => warn('Create channel failed:', e))
-
-    ForegroundService.requestPermissions()
-      .then((r) => log('Permission result:', JSON.stringify(r)))
-      .catch((e) => warn('Permission request failed:', e))
 
     MediaSessionNative.setActive({ active: true })
       .then(() => log('Native MediaSession activated'))
@@ -180,7 +177,11 @@ export function useBackgroundPlayback(audioRef) {
           if (!serviceStartedRef.current) {
             serviceStartedRef.current = true
             log('Starting foreground service')
-            ForegroundService.startForegroundService(getServiceOptions(track, playing))
+            ForegroundService.requestPermissions()
+              .then((r) => {
+                log('Permission result:', JSON.stringify(r))
+                return ForegroundService.startForegroundService(getServiceOptions(track, playing))
+              })
               .then(() => log('Foreground service started'))
               .catch((e) => warn('ForegroundService start:', e))
           } else {
