@@ -2,15 +2,39 @@ import { saveAudioFile } from './indexedDB'
 
 const BASE_URLS = [
   'https://saavn.sumit.co/api',
+  'https://saavn.me',
+  'https://jiosaavn-api-psi.vercel.app/api',
+  'https://jiosaavn-cors-proxy.vercel.app/api',
 ]
+
+function isRateLimitStatus(status) {
+  return status === 429 || status === 403
+}
+
+function getUserFriendlyError(errors, status) {
+  if (isRateLimitStatus(status)) {
+    return 'Online service is temporarily unavailable due to high traffic. Please try again in a few minutes.'
+  }
+  const joined = errors.join('; ')
+  if (joined.includes('Failed to fetch') || joined.includes('network error') || joined.includes('ENOTFOUND')) {
+    return 'Could not reach the online music service. Check your internet connection.'
+  }
+  return 'Search is temporarily unavailable. Please try again later.'
+}
 
 async function fetchWithFallback(path) {
   const errors = []
+  let lastStatus = 0
   for (const base of BASE_URLS) {
     try {
       const url = `${base}${path}`
       const res = await fetch(url)
       if (!res.ok) {
+        lastStatus = res.status
+        if (isRateLimitStatus(res.status)) {
+          errors.push(`${base} — rate limited`)
+          continue
+        }
         errors.push(`${base} returned ${res.status}`)
         continue
       }
@@ -24,7 +48,7 @@ async function fetchWithFallback(path) {
       errors.push(`${base} — ${err.message || 'network error'}`)
     }
   }
-  return { data: null, error: errors.join('; '), proxyUsed: null }
+  return { data: null, error: getUserFriendlyError(errors, lastStatus), proxyUsed: null }
 }
 
 export function buildOnlineTrack(song) {
