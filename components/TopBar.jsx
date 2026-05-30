@@ -4,7 +4,7 @@ import usePlayerStore from '../store/playerStore'
 export default function TopBar() {
   const activeView = usePlayerStore(s => s.activeView)
   const isPlayerExpanded = usePlayerStore(s => s.isPlayerExpanded)
-  const setActiveView = usePlayerStore(s => s.setActiveView)
+  const goHome = usePlayerStore(s => s.goHome)
 
   if (isPlayerExpanded) return null
 
@@ -20,7 +20,7 @@ export default function TopBar() {
     >
       {activeView === 'playlist' && (
         <button
-onClick={() => setActiveView('home')}
+onClick={() => goHome()}
             className="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary-fixed-dim transition-colors active:scale-90"
             aria-label="Back to home"
         >

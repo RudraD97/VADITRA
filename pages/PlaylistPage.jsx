@@ -6,7 +6,7 @@ import { formatTime, DEFAULT_COVER } from '../utils/audioUtils'
 export default function PlaylistPage() {
   const {
     playlists, activePlaylistId, currentTrack, isPlaying,
-    setActiveView, setPlayerExpanded,
+    setActiveView, setPlayerExpanded, goHome,
     playPlaylist, playTrackFromQueue, setQueue,
     toggleLike, deleteTrack, removeTrackFromPlaylist,
     library,
@@ -67,7 +67,7 @@ export default function PlaylistPage() {
         <div className="text-center">
           <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30 mb-3 block">queue_music</span>
           <p className="text-on-surface-variant/60 font-inter">No playlist selected</p>
-          <button className="mt-4 text-primary-fixed-dim font-semibold" onClick={() => setActiveView('home')}>
+          <button className="mt-4 text-primary-fixed-dim font-semibold" onClick={() => goHome()}>
             Go to Home
           </button>
         </div>

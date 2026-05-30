@@ -356,6 +356,7 @@ const usePlayerStore = create(
       // ─── Actions: UI ─────────────────────────────────────────────
       setActiveView: (view) => set({ activeView: view, isPlayerExpanded: view === 'player' ? get().isPlayerExpanded : false }),
       setPlayerExpanded: (val) => set({ isPlayerExpanded: val, ...(val ? { activeView: 'player' } : {}) }),
+      goHome: () => set({ activeView: 'home', isPlayerExpanded: false }),
       togglePlayerExpanded: () => set(s => ({ isPlayerExpanded: !s.isPlayerExpanded })),
     }),
 

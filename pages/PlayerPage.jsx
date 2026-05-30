@@ -12,7 +12,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
     repeatMode, isShuffle,
     togglePlay, playNext, playPrevious,
     toggleShuffle, cycleRepeat, toggleLike,
-    setPlayerExpanded, setActiveView,
+    setPlayerExpanded, setActiveView, goHome,
     queue, queueIndex, deleteTrack, setQueue,
     library, addToLibrary, setCurrentTrack,
   } = usePlayerStore()
@@ -90,7 +90,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
 
   const handleClose = () => {
     setClosing(true)
-    setTimeout(() => { setPlayerExpanded(false); setActiveView('home') }, 300)
+    setTimeout(() => { goHome() }, 300)
   }
 
   const repeatIcon = repeatMode === 'one' ? 'repeat_one' : 'repeat'
@@ -555,7 +555,7 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
                 </button>
               )}
               <div className="mx-5 my-1 h-px" style={{ background: 'rgba(68, 73, 57, 0.25)' }} />
-              <button onClick={() => { deleteTrack(currentTrack.id); setPlayerExpanded(false); setActiveView('home'); setShowHeaderMenu(false) }}
+              <button onClick={() => { deleteTrack(currentTrack.id); goHome(); setShowHeaderMenu(false) }}
                 className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"
               >
                 <span className="material-symbols-outlined text-[20px] text-error">delete</span>

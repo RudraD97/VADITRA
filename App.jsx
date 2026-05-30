@@ -38,12 +38,13 @@ export default function App() {
 
   useEffect(() => {
     const handler = CapacitorApp.addListener('backButton', () => {
-      const { isPlayerExpanded, activeView, setPlayerExpanded, setActiveView } = usePlayerStore.getState()
+      const { isPlayerExpanded, activeView, goHome } = usePlayerStore.getState()
       if (isPlayerExpanded) {
-        setPlayerExpanded(false)
-        setActiveView('home')
+        goHome()
       } else if (activeView !== 'home') {
-        setActiveView('home')
+        goHome()
+      } else {
+        CapacitorApp.exitApp()
       }
     })
     return () => { handler.then(h => h.remove()) }
