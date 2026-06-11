@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>VADITRA | Upload</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&amp;family=Inter:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: "Inter", sans-serif;
+            background-color: #121413;
+        }
+        .font-syne { font-family: "Syne", sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+        }
+        .glass-panel {
+            background: rgba(30, 32, 31, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(142, 147, 128, 0.12)
+        }
+        .grain-overlay {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDzA6m6TJVyBOc-d6hkRpGQIYOq0Nap6lJF1hvfHjhQRnj70Jm1mA_8qUTP3Vsi7CQ-KH5sykOdxPnMOvWc4giI0JEQv3QiBaFdbKiXMoRrsNNEIsmqp1brvorhxNkJWcawJylrHAIMPAlalLXEO4CvNdL5V6pmqgfJvCC2NL6nDbl-v0g82cFhmxaVklND9UridZRsTRK72dlUR7YRV983G1P1Ei0OtBWxqX3DwK4gi8aOGS5C3bDMYJkiLL0jWPs92NpRW3uz3UM8);
+            opacity: 0.03;
+            z-index: 9999
+        }
+        .sage-glow {
+            box-shadow: 0 0 16px 0 rgba(174, 211, 102, 0.15)
+        }
+        .upload-area:active {
+            transform: scale(0.995)
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#243600",
+                        "on-secondary-fixed": "#151d19",
+                        "on-secondary": "#29322d",
+                        "outline": "#8e9380",
+                        "on-primary-fixed": "#141f00",
+                        "surface-tint": "#aed366",
+                        "primary-container": "#c9f07e",
+                        "error": "#ffb4ab",
+                        "surface-container": "#1e201f",
+                        "surface-bright": "#383a38",
+                        "on-secondary-fixed-variant": "#404943",
+                        "background": "#121413",
+                        "surface-dim": "#121413",
+                        "on-surface-variant": "#c4c9b5",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#1a1c1b",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#2f3130",
+                        "primary-fixed": "#c9f07e",
+                        "on-surface": "#e2e3e0",
+                        "primary-fixed-dim": "#aed366",
+                        "tertiary-container": "#e1e3e1",
+                        "on-tertiary": "#2e3130",
+                        "surface-container-high": "#282a29",
+                        "tertiary-fixed": "#e1e3e1",
+                        "secondary": "#bfc9c2",
+                        "tertiary-fixed-dim": "#c5c7c5",
+                        "inverse-primary": "#496800",
+                        "secondary-fixed-dim": "#bfc9c2",
+                        "surface": "#121413",
+                        "secondary-fixed": "#dbe5dd",
+                        "surface-variant": "#333534",
+                        "on-primary-fixed-variant": "#364e00",
+                        "on-primary-container": "#4f6e04",
+                        "surface-container-lowest": "#0d0f0e",
+                        "on-tertiary-fixed-variant": "#444746",
+                        "surface-container-highest": "#333534",
+                        "on-background": "#e2e3e0",
+                        "primary": "#ffffff",
+                        "inverse-surface": "#e2e3e0",
+                        "on-error": "#690005",
+                        "tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#191c1b",
+                        "outline-variant": "#444939",
+                        "on-tertiary-container": "#626563",
+                        "on-secondary-container": "#aeb7b0",
+                        "secondary-container": "#404943",
+                        "luminous-sage": "#aed366"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-margin-mobile": "20px",
+                        "container-margin-desktop": "64px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "section-gap": "80px",
+                        "nav-height": "64px",
+                        "mini-player-height": "64px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Syne"],
+                        "headline-lg-mobile": ["Syne"],
+                        "headline-md": ["Syne"],
+                        "body-md": ["Inter"],
+                        "display-md": ["Syne"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Syne"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-md": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface overflow-x-hidden">
+<div class="grain-overlay"></div>
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl flex justify-between items-center h-nav-height px-container-margin-mobile">
+<h1 class="font-display-md text-[24px] tracking-tighter text-on-surface uppercase">VADITRA</h1>
+<div class="flex items-center gap-unit">
+<button class="w-[48px] h-[48px] flex items-center justify-center text-on-surface hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/20 overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAacHA_z367CnEfLNHvUYHG4i60EYdctEtGJGYw6QD56-orJo8k2bnLyZJqTPqbkxOnVN9rbX2KhR9QqKYvzMjL_tOBB30_my0jCGH0VRX0dFP0CEqzs0qsu1_F1sw8Y8grz7XZsZ6TbaaoNE4L5nFy6RAvY-1Q2H0KP6PTsVjsRKk1K34e5UQaQoc4b8zwHFn6AVDvU604H8eqEUaxUvaCyR38ugKrBbE_0mNkZZPEQcspJm19G6ekZ2bxSPbZYq51SzmFN3jZVTM2"/>
+</div>
+</div>
+</header>
+<main class="min-h-screen pt-[80px] pb-[180px] px-container-margin-mobile max-w-4xl mx-auto flex flex-col gap-gutter">
+<!-- Page Title -->
+<section class="mt-4">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Upload</h2>
+<p class="font-body-md text-body-md text-on-surface-variant/60 mt-1">Distribute your sound to the world.</p>
+</section>
+<!-- Modernized Drag-and-Drop Zone -->
+<section class="upload-area group cursor-pointer relative h-[320px] md:h-[400px] w-full rounded-xl border border-dashed border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-low/50 hover:border-luminous-sage/50 transition-all duration-300 flex flex-col items-center justify-center gap-unit p-gutter text-center">
+<div class="w-16 h-16 rounded-full bg-luminous-sage/10 flex items-center justify-center text-luminous-sage group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-[32px]">upload</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Tap to browse files</h3>
+<p class="font-body-md text-body-md text-on-surface-variant/60 mt-1">or drag here</p>
+</div>
+<p class="absolute bottom-gutter font-label-sm text-label-sm text-on-surface-variant/40">WAV, MP3, FLAC (Max 250MB)</p>
+<input class="absolute inset-0 opacity-0 cursor-pointer" multiple="" type="file"/>
+</section>
+<!-- Upload Queue Section -->
+<section class="flex flex-col gap-gutter mt-4">
+<div class="flex justify-between items-center">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-[0.1em]">Uploading (3)</h3>
+<button class="text-luminous-sage font-label-md text-label-md hover:underline transition-all">Clear All</button>
+</div>
+<div class="grid gap-unit">
+<!-- Upload Item 1 -->
+<div class="glass-panel p-4 rounded-xl flex items-center gap-gutter transition-all hover:bg-surface-container-high/50 border-none">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="Track" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB31xv2Iq7dglKGauQC3nrpNwp-JQ_yHxuVx0--yIDcr8ZFlLQjNQBiqhgySiryVEmq7Xzi83if-YM7aDmBbYwFRmghxJMfVva96mgRSxbkhDjQ-2j2g1SEZ-61OMjGpFcZJBI9zA7jJ0vFtqYD_Xct3TiLh_0p1Slqe42wTQnuNYpEisPJwRWSD41zQEyLW6Mfh8mJGG-pZ889zGg-MPiqKhZV0OJ-JjI2q7NG6HyU20JAPC-Gz8lpy7MM7dFrzemVlPHvO70PtjSR"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between mb-3">
+<span class="font-body-md text-body-md text-on-surface truncate pr-4">Nordic_Drift_Master.wav</span>
+<span class="font-label-md text-label-md text-luminous-sage">78%</span>
+</div>
+<div class="w-full h-[3px] bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-luminous-sage transition-all duration-500 shadow-[0_0_8px_rgba(174,211,102,0.3)]" style="width: 78%"></div>
+</div>
+</div>
+<button class="text-on-surface-variant/40 hover:text-error transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Upload Item 2 -->
+<div class="glass-panel p-4 rounded-xl flex items-center gap-gutter transition-all hover:bg-surface-container-high/50 border-none">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="Track" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsvGonVgw9M6WJnA9HfGYhWdJOhuPPtx6p-6OThKoLxbexi8sOUoU8H8CYup3zqsd0qbRkyKfDfc3Gki6JTPuTUCR4Afi_vqpUq1qm_LY2u46QI6I9gm7bYcv_p7iSD_boJ12ikM8J3jdnFtZPuuNFENGqa7lYzjxyYeJIoi3V1_Xxj1cHQ-uNud7IA2jtzRztw6SZ39mQ9oSdF6wEXu1tAXnW76kCqXAR_pSk_6Uk0ld3EUn0SIcmulw2L7UFDB2ehF0njvGRP1Fm"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between mb-3">
+<span class="font-body-md text-body-md text-on-surface truncate pr-4">Midnight_Echoes.mp3</span>
+<span class="font-label-md text-label-md text-luminous-sage">45%</span>
+</div>
+<div class="w-full h-[3px] bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-luminous-sage transition-all duration-500 shadow-[0_0_8px_rgba(174,211,102,0.3)]" style="width: 45%"></div>
+</div>
+</div>
+<button class="text-on-surface-variant/40 hover:text-error transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Upload Item 3 (Completed) -->
+<div class="glass-panel p-4 rounded-xl flex items-center gap-gutter transition-all hover:bg-surface-container-high/50 border-none">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="Track" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_yYJzcaTTQR6SHAemn_9S6-h_c0Z06nIUHT2UJ1ZbNSGQUIAeZOEo807fV23zH8QXPzI7BJNsh3NTM_hfPSpEzPibgdEXVjdn_TBUbM2j9bO5fKsX1WKEF2Rw7EmcUyqdQAm7w9niVUQaWulh9wgeBQP_IIfR8XvEUyd5SIk8Rgdm9MaBcbeI65cDvjDqqaYD5qrvjDwlIXCPV37T_ZX-YcRZTmVBvHYC76IodGCqDEg6GZ3V_fP9xBUFkP0I4tUFKV1ixLrL1Nv6"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between mb-3">
+<span class="font-body-md text-body-md text-on-surface truncate pr-4">Urban_Silence_EP_01.flac</span>
+<span class="font-label-md text-label-md text-on-surface-variant/60 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'wght' 700;">check</span> Done
+                        </span>
+</div>
+<div class="w-full h-[3px] bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-outline/20 transition-all duration-500" style="width: 100%"></div>
+</div>
+</div>
+<button class="text-on-surface-variant/40 hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Mini Player -->
+<div class="fixed bottom-[64px] left-0 w-full z-40 px-4 pb-2">
+<div class="h-mini-player-height glass-panel rounded-xl flex items-center px-gutter sage-glow border-outline-variant/10">
+<div class="w-10 h-10 rounded-lg overflow-hidden mr-3">
+<img alt="Cover" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHpKu8mN9O9iEVXFME3q56DxCJWzguhM8DTkh6x_9xbh1TVp2nKgAbSHmQGbfiG_LB_dPTkQfsV_I23CvlFkbFkjpjAUlyjd7fBtXfvFGZtEH6nYGuhUxKyf0lvgUH5uYzrlCVm71hp_t-OoCG9jpcBKE4YaABvSH1gcsrjBTE-VC2aLsgbSDMuCSrYxGs5AJnvaagfvTSsm3qiJ9jkzceUfjBEKReXW9X_DPPrJfWKI3rmQH_pJS7qdQGgmPkBq9FEa96vUOtn8Z5"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="font-label-md text-label-md text-on-surface truncate">Fjord Serenity</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant/60 truncate">Soren &amp; The Wind</p>
+</div>
+<div class="flex items-center gap-4 ml-4">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 duration-200">
+<span class="material-symbols-outlined">skip_previous</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-luminous-sage text-on-primary rounded-full active:scale-90 duration-200 shadow-lg shadow-luminous-sage/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 duration-200">
+<span class="material-symbols-outlined">skip_next</span>
+</button>
+</div>
+<!-- Floating Progress Line -->
+<div class="absolute bottom-0 left-0 h-[2px] bg-luminous-sage transition-all" style="width: 35%;"></div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-height bg-surface-container-highest/95 backdrop-blur-20px border-t border-outline-variant/10 flex justify-around items-center px-gutter pb-safe">
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-luminous-sage transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">library_music</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-luminous-sage transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-luminous-sage transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">slow_motion_video</span>
+</button>
+<button class="flex flex-col items-center justify-center text-luminous-sage after:content-[''] after:w-1 after:h-1 after:bg-luminous-sage after:rounded-full after:mt-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">upload</span>
+</button>
+</nav>
+<script>
+    // Simple Interaction: Simulate Progress
+    document.querySelectorAll('.bg-luminous-sage').forEach((bar, index) => {
+        // Only target bars in the upload queue (skip the play button which has the same class)
+        if(bar.classList.contains('h-full') && !bar.closest('.mini-player-height')) {
+            setInterval(() => {
+                let currentWidth = parseFloat(bar.style.width);
+                if(currentWidth < 100) {
+                    bar.style.width = (currentWidth + Math.random() * 0.5) + '%';
+                    const parent = bar.closest('.flex-1');
+                    if(parent) {
+                        const percentDisplay = parent.querySelector('.text-luminous-sage');
+                        if(percentDisplay) {
+                            percentDisplay.innerText = Math.floor(parseFloat(bar.style.width)) + '%';
+                        }
+                    }
+                }
+            }, 1000);
+        }
+    });
+
+    const uploadArea = document.querySelector('.upload-area');
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('bg-surface-container', 'border-luminous-sage');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('bg-surface-container', 'border-luminous-sage');
+    });
+</script>
+</body></html>
