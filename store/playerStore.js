@@ -94,6 +94,11 @@ const usePlayerStore = create(
         }
 
         if (repeatMode === 'one') {
+          const audio = getAudioElement()
+          if (audio) {
+            audio.currentTime = 0
+            audio.play().catch(() => {})
+          }
           set({ currentTime: 0, isPlaying: true })
           return
         }

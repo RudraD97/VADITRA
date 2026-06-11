@@ -92,7 +92,7 @@ export function useAudioEngine() {
     }
 
     // Already loaded by setQueue's user-gesture handler — don't reload
-    if (audio.currentSrc === currentTrack.src) return
+    if (audio.src === currentTrack.src) return
 
     hasCanPlayRef.current = false
     usePlayerStore.setState({ currentTime: 0, duration: 0, audioError: null })
