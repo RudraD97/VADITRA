@@ -4,6 +4,7 @@ import Visualizer from '../components/Visualizer'
 import BottomNav from '../components/BottomNav'
 import { formatTime, DEFAULT_COVER } from '../utils/audioUtils'
 import { getRelatedSongs, downloadOnlineTrack } from '../utils/jiosaavnApi'
+import { EQ_PRESETS } from '../hooks/useVisualizer'
 
 export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initContext }) {
 
@@ -15,11 +16,13 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
     setPlayerExpanded, setActiveView, goHome,
     queue, queueIndex, deleteTrack, setQueue,
     library, addToLibrary, setCurrentTrack,
+    eqPreset, setEqPreset,
   } = usePlayerStore()
 
   const upcomingLocal = queue.slice(queueIndex + 1, queueIndex + 6)
   const [upcomingRelated, setUpcomingRelated] = useState([])
   const [relatedError, setRelatedError] = useState(null)
+  const [eqOpen, setEqOpen] = useState(false)
   const [showHeaderMenu, setShowHeaderMenu] = useState(false)
   const [closing, setClosing] = useState(false)
   const [downloading, setDownloading] = useState(false)
@@ -389,7 +392,35 @@ export default function PlayerPage({ frequencyData, seekTo, seekBarProps, initCo
             >
               <span className="material-symbols-outlined text-[22px]">{repeatIcon}</span>
             </button>
+            <button
+              onClick={() => setEqOpen(!eqOpen)}
+              className="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform"
+              style={{ color: eqPreset !== 'Flat' ? '#aed366' : 'rgba(226,227,224,0.5)' }}
+              aria-label="Equalizer"
+            >
+              <span className="material-symbols-outlined text-[22px]">tune</span>
+            </button>
           </div>
+
+          {/* EQ Preset Chips */}
+          {eqOpen && (
+            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+              {Object.keys(EQ_PRESETS).map(name => (
+                <button
+                  key={name}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-inter font-medium transition-all active:scale-90"
+                  style={{
+                    background: eqPreset === name ? 'rgba(174,211,102,0.15)' : 'rgba(68,73,57,0.2)',
+                    color: eqPreset === name ? '#aed366' : 'rgba(226,227,224,0.6)',
+                    border: eqPreset === name ? '1px solid rgba(174,211,102,0.3)' : '1px solid transparent',
+                  }}
+                  onClick={() => { setEqPreset(name); setEqOpen(false) }}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── Upcoming Queue ─────────────────────────────────────────────── */}

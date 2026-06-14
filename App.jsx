@@ -7,7 +7,7 @@ import { useBackgroundPlayback } from './hooks/useBackgroundPlayback'
 import { useVisualizer } from './hooks/useVisualizer'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSeekBar } from './hooks/useSeekBar'
-import { getAllAudioFiles } from './utils/indexedDB'
+import { getAllAudioFiles, getAudioFile } from './utils/indexedDB'
 import notifyDevice from './utils/deviceNotify'
 
 // Pages
@@ -35,6 +35,35 @@ export default function App() {
   const restoreTrackSrc = usePlayerStore(s => s.restoreTrackSrc)
 
   useEffect(() => { notifyDevice() }, [])
+
+  // Visibility change — recreate blob URLs from IndexedDB if they were GC'd
+  useEffect(() => {
+    const handle = () => {
+      if (document.visibilityState !== 'visible') return
+      const { currentTrack } = usePlayerStore.getState()
+      if (!currentTrack?.src?.startsWith('blob:')) return
+      // Check if the blob URL is still valid by fetching it
+      fetch(currentTrack.src, { method: 'HEAD' }).catch(() => {
+        // Blob was GC'd — recreate from IndexedDB
+        getAudioFile(currentTrack.id).then((blob) => {
+          if (!blob) return
+          const url = URL.createObjectURL(blob)
+          usePlayerStore.getState().restoreTrackSrc(currentTrack.id, url)
+          const audio = document.querySelector('audio')
+          if (audio) {
+            const savedTime = audio.currentTime
+            const wasPlaying = !audio.paused
+            audio.src = url
+            audio.load()
+            audio.currentTime = savedTime
+            if (wasPlaying) audio.play().catch(() => {})
+          }
+        })
+      })
+    }
+    document.addEventListener('visibilitychange', handle)
+    return () => document.removeEventListener('visibilitychange', handle)
+  }, [])
 
   useEffect(() => {
     const handler = CapacitorApp.addListener('backButton', () => {

@@ -34,6 +34,7 @@ function getServiceOptions(track, playing) {
 export function useBackgroundPlayback(audioRef) {
   const prevTrackIdRef = useRef(null)
   const serviceStartedRef = useRef(false)
+  const keepAliveRef = useRef(null)
 
   const openPlayer = useCallback(() => {
     usePlayerStore.getState().setPlayerExpanded(true)
@@ -148,19 +149,34 @@ export function useBackgroundPlayback(audioRef) {
         try {
           if (navigator.mediaSession) {
             if (track && trackId !== prevTrackId) {
+              const artwork = track.cover
+                ? [
+                    { src: track.cover, sizes: '512x512', type: 'image/jpeg' },
+                    { src: track.cover, sizes: '1024x1024', type: 'image/jpeg' },
+                  ]
+                : []
               navigator.mediaSession.metadata = new MediaMetadata({
                 title: track.title || '',
                 artist: track.artist || '',
                 album: track.album || '',
-                artwork: track.cover
-                  ? [{ src: track.cover, sizes: '512x512', type: 'image/jpeg' }]
-                  : [],
+                artwork,
               })
             }
             navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
           }
         } catch (e) {
           warn('MediaSession update failed:', e)
+        }
+
+        // Keep-alive for online streaming tracks — prevents network sleep
+        if (keepAliveRef.current) {
+          clearInterval(keepAliveRef.current)
+          keepAliveRef.current = null
+        }
+        if (track && playing && track._source === 'online' && track.src) {
+          keepAliveRef.current = setInterval(() => {
+            fetch(track.src, { method: 'HEAD', mode: 'cors' }).catch(() => {})
+          }, 30000)
         }
 
         if (track && trackId !== prevTrackId) {
@@ -202,8 +218,32 @@ export function useBackgroundPlayback(audioRef) {
     return unsub
   }, [])
 
+  // Update MediaSession position state as playback progresses
+  useEffect(() => {
+    const unsub = usePlayerStore.subscribe(
+      (s) => ({ time: s.currentTime, duration: s.duration, playing: s.isPlaying }),
+      ({ time, duration, playing }) => {
+        if (!playing || !duration) return
+        try {
+          if (navigator.mediaSession && typeof navigator.mediaSession.setPositionState === 'function') {
+            navigator.mediaSession.setPositionState({
+              duration,
+              playbackRate: 1,
+              position: time,
+            })
+          }
+        } catch {}
+      }
+    )
+    return unsub
+  }, [])
+
   useEffect(() => {
     return () => {
+      if (keepAliveRef.current) {
+        clearInterval(keepAliveRef.current)
+        keepAliveRef.current = null
+      }
       if (serviceStartedRef.current) {
         ForegroundService.stopForegroundService().catch((e) => warn('ForegroundService stop on unmount:', e))
         serviceStartedRef.current = false

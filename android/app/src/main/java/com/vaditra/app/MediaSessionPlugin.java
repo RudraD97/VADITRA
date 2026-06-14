@@ -1,9 +1,14 @@
 package com.vaditra.app;
 
 import android.app.Activity;
+import android.content.Context;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.os.Build;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -16,6 +21,14 @@ public class MediaSessionPlugin extends Plugin {
 
     private static MediaSession.Token sessionToken = null;
     private MediaSession mediaSession;
+    private AudioManager audioManager;
+    private AudioFocusRequest audioFocusRequest;
+    private final AudioManager.OnAudioFocusChangeListener afChangeListener =
+        focusChange -> {
+            JSObject ret = new JSObject();
+            ret.put("focusChange", focusChange);
+            notifyListeners("audioFocusChange", ret);
+        };
 
     public static MediaSession.Token getSessionToken() {
         return sessionToken;
@@ -26,6 +39,9 @@ public class MediaSessionPlugin extends Plugin {
         super.load();
         Activity activity = getActivity();
         if (activity == null) return;
+
+        audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+
         mediaSession = new MediaSession(activity, "VADITRA");
         mediaSession.setCallback(new MediaSession.Callback() {
             @Override
@@ -58,6 +74,45 @@ public class MediaSessionPlugin extends Plugin {
         mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSession.setActive(true);
         sessionToken = mediaSession.getSessionToken();
+    }
+
+    @PluginMethod
+    public void requestAudioFocus(PluginCall call) {
+        if (audioManager == null) {
+            call.resolve();
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build();
+            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(attrs)
+                .setOnAudioFocusChangeListener(afChangeListener)
+                .build();
+            audioManager.requestAudioFocus(audioFocusRequest);
+        } else {
+            audioManager.requestAudioFocus(afChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN);
+        }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void abandonAudioFocus(PluginCall call) {
+        if (audioManager == null) {
+            call.resolve();
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest);
+            audioFocusRequest = null;
+        } else {
+            audioManager.abandonAudioFocus(afChangeListener);
+        }
+        call.resolve();
     }
 
     @PluginMethod
@@ -112,6 +167,14 @@ public class MediaSessionPlugin extends Plugin {
 
     @PluginMethod
     public void release(PluginCall call) {
+        if (audioManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+                audioManager.abandonAudioFocusRequest(audioFocusRequest);
+                audioFocusRequest = null;
+            } else {
+                audioManager.abandonAudioFocus(afChangeListener);
+            }
+        }
         if (mediaSession != null) {
             mediaSession.setActive(false);
             mediaSession.release();

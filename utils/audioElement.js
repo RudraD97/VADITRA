@@ -26,3 +26,7 @@ export function resumeAudio() {
   if (!_audio) return
   _audio.play().catch(() => {})
 }
+
+export function getAudioSrc() {
+  return _audio?.src || null
+}

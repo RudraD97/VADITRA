@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "checkJs": true,
+    "strict": true
+  },
+  "include": ["**/*.js", "**/*.html"],
+  "exclude": ["node_modules", "dist"]
+}

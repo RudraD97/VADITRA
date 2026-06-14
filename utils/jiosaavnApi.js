@@ -102,10 +102,10 @@ const TRENDING_SEEDS = [
   'top 50', 'global hits', 'indie trending',
 ]
 
-export async function getRecommendations() {
-  const chosen = [...TRENDING_SEEDS].sort(() => Math.random() - 0.5).slice(0, 3)
+export async function getRecommendations(count = 15) {
+  const chosen = [...TRENDING_SEEDS].sort(() => Math.random() - 0.5).slice(0, 5)
   const results = await Promise.allSettled(
-    chosen.map(q => searchOnlineSongs(q, 3))
+    chosen.map(q => searchOnlineSongs(q, 5))
   )
   const all = []
   let lastError = null
@@ -125,7 +125,7 @@ export async function getRecommendations() {
     if (seen.has(key)) return false
     seen.add(key)
     return true
-  }).slice(0, 5)
+  }).slice(0, count)
   return { success: true, data: deduped, error: null, proxyUsed: results.find(r => r.status === 'fulfilled' && r.value.proxyUsed)?.value?.proxyUsed || null }
 }
 

@@ -40,6 +40,7 @@ const usePlayerStore = create(
       isPlayerExpanded: false,
       isQueueVisible: false,
       audioError: null,
+      eqPreset: 'Flat',      // EQ preset name for built-in equalizer
 
       // ─── Actions: Playback ───────────────────────────────────────
       // These call audio element methods synchronously inside the action so
@@ -363,6 +364,7 @@ const usePlayerStore = create(
       setPlayerExpanded: (val) => set({ isPlayerExpanded: val, ...(val ? { activeView: 'player' } : {}) }),
       goHome: () => set({ activeView: 'home', isPlayerExpanded: false }),
       togglePlayerExpanded: () => set(s => ({ isPlayerExpanded: !s.isPlayerExpanded })),
+      setEqPreset: (preset) => set({ eqPreset: preset }),
     }),
 
     {
@@ -384,6 +386,7 @@ const usePlayerStore = create(
             tracks: clear(p.tracks),
           })),
           volume: state.volume,
+          eqPreset: state.eqPreset,
           isShuffle: state.isShuffle,
           repeatMode: state.repeatMode,
           activePlaylistId: state.activePlaylistId,

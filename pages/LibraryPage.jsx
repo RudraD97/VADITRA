@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import usePlayerStore from '../store/playerStore'
-import { useFileUpload } from '../hooks/useFileUpload'
 import { DEFAULT_COVER } from '../utils/audioUtils'
+import { getRecommendations } from '../utils/jiosaavnApi'
+import useOnlineStatus from '../hooks/useOnlineStatus'
 
 const quotes = [
   '"Where words fail, music speaks."',
@@ -12,6 +13,10 @@ const quotes = [
   '"Music is the universal language of mankind."',
 ]
 
+const SWIPE_THRESHOLD = 80
+const RESISTANCE_START = 40
+const RESISTANCE_FACTOR = 0.3
+
 export default function LibraryPage() {
   const {
     library, setQueue, toggleLike, currentTrack, deleteTrack,
@@ -19,46 +24,155 @@ export default function LibraryPage() {
     setActivePlaylist, setActiveView, setPlayerExpanded, toggleShuffle,
   } = usePlayerStore()
 
-  const { handleFiles, openFilePicker, onFileInputChange, fileInputRef } = useFileUpload()
-
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
   const [newName, setNewName] = useState('')
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
   const [menuTrackId, setMenuTrackId] = useState(null)
   const [playlistMenuId, setPlaylistMenuId] = useState(null)
-  const [showAllSongs, setShowAllSongs] = useState(false)
-  const songRefs = useRef([])
+
+  const [trending, setTrending] = useState([])
+  const [trendingLoading, setTrendingLoading] = useState(true)
+  const [trendingError, setTrendingError] = useState(null)
+  const [trendingLoadingMore, setTrendingLoadingMore] = useState(false)
+  const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0)
+  const [trendingSwipeX, setTrendingSwipeX] = useState(0)
+  const [trendingIsSwiping, setTrendingIsSwiping] = useState(false)
+  const [trendingTransition, setTrendingTransition] = useState(false)
+  const [trendingNoMore, setTrendingNoMore] = useState(false)
+
+  const trendingRef = useRef([])
+  const trendingIndexRef = useRef(0)
+  trendingRef.current = trending
+  trendingIndexRef.current = currentTrendingIndex
+
+  const trendingTouchRef = useRef({ startX: 0, currentX: 0, isSwiping: false })
+  const trendingAnimTimer = useRef(null)
+  const cardRef = useRef(null)
+  const isOnline = useOnlineStatus()
 
   const quote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], [])
-
-  const sorted = useMemo(() => [...library].reverse(), [library])
   const likedTracks = useMemo(() => library.filter(t => t.liked), [library])
 
-  const displaySongs = useMemo(() => showAllSongs ? sorted : sorted.slice(0, 5), [sorted, showAllSongs])
+  const fetchTrending = useCallback(async () => {
+    setTrendingLoading(true)
+    setTrendingError(null)
+    const result = await getRecommendations(15)
+    if (result.success) {
+      setTrending(result.data)
+      setCurrentTrendingIndex(0)
+    } else {
+      setTrendingError(result.error || 'Could not load recommendations')
+    }
+    setTrendingLoading(false)
+  }, [])
+
+  useEffect(() => { fetchTrending() }, [])
+
+  const loadMoreTrending = useCallback(async () => {
+    if (trendingLoadingMore) return
+    setTrendingLoadingMore(true)
+    const result = await getRecommendations(10)
+    if (result.success) {
+      setTrending(prev => {
+        const existingIds = new Set(prev.map(t => t.id))
+        const newTracks = result.data.filter(t => !existingIds.has(t.id))
+        if (newTracks.length === 0) {
+          setTrendingNoMore(true)
+          setTimeout(() => setTrendingNoMore(false), 3000)
+          return prev
+        }
+        return [...prev, ...newTracks]
+      })
+    }
+    setTrendingLoadingMore(false)
+  }, [trendingLoadingMore])
 
   useEffect(() => {
-    songRefs.current = songRefs.current.slice(0, displaySongs.length)
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(e => e.target.classList.toggle('song-visible', e.isIntersecting))
-    }, { threshold: 0.25 })
-    songRefs.current.forEach(el => el && observer.observe(el))
-    return () => observer.disconnect()
-  }, [displaySongs.length])
-
-  const sectionRef = useRef(null)
-
-  const handlePlay = (index) => {
-    setQueue(sorted, index)
-    setPlayerExpanded(true)
-  }
-
-  const handleShuffleAll = () => {
-    if (!sorted.length) return
-    setQueue(sorted, 0)
-    if (!usePlayerStore.getState().isShuffle) {
-      toggleShuffle()
+    return () => {
+      if (trendingAnimTimer.current) clearTimeout(trendingAnimTimer.current)
     }
-  }
+  }, [])
+
+  const handleTrendingTouchStart = useCallback((e) => {
+    trendingTouchRef.current = { startX: e.touches[0].clientX, currentX: 0, isSwiping: true }
+    setTrendingTransition(false)
+    setTrendingIsSwiping(true)
+  }, [])
+
+  const handleTrendingTouchMove = useCallback((e) => {
+    const touch = trendingTouchRef.current
+    if (!touch.isSwiping) return
+    const dx = e.touches[0].clientX - touch.startX
+    let tx = dx
+    if (trendingIndexRef.current >= trendingRef.current.length - 1 && dx > 0) {
+      tx = dx < RESISTANCE_START ? dx : RESISTANCE_START + (dx - RESISTANCE_START) * RESISTANCE_FACTOR
+    }
+    if (trendingIndexRef.current === 0 && dx < 0) {
+      tx = dx > -RESISTANCE_START ? dx : -RESISTANCE_START + (dx + RESISTANCE_START) * RESISTANCE_FACTOR
+    }
+    touch.currentX = tx
+    setTrendingSwipeX(tx)
+  }, [])
+
+  const handleTrendingTouchEnd = useCallback(() => {
+    const touch = trendingTouchRef.current
+    if (!touch.isSwiping) return
+    touch.isSwiping = false
+    setTrendingIsSwiping(false)
+
+    const dx = touch.currentX
+    const absDx = Math.abs(dx)
+    const idx = trendingIndexRef.current
+    const len = trendingRef.current.length
+
+    if (absDx < SWIPE_THRESHOLD) {
+      setTrendingTransition(true)
+      setTrendingSwipeX(0)
+      return
+    }
+
+    if (dx > 0 && idx < len - 1) {
+      setTrendingTransition(true)
+      setTrendingSwipeX(500)
+      trendingAnimTimer.current = setTimeout(() => {
+        setCurrentTrendingIndex(i => i + 1)
+        setTrendingTransition(false)
+        setTrendingSwipeX(-500)
+        requestAnimationFrame(() => {
+          setTrendingTransition(true)
+          setTrendingSwipeX(0)
+        })
+      }, 250)
+    } else if (dx < 0 && idx > 0) {
+      setTrendingTransition(true)
+      setTrendingSwipeX(-500)
+      trendingAnimTimer.current = setTimeout(() => {
+        setCurrentTrendingIndex(i => i - 1)
+        setTrendingTransition(false)
+        setTrendingSwipeX(500)
+        requestAnimationFrame(() => {
+          setTrendingTransition(true)
+          setTrendingSwipeX(0)
+        })
+      }, 250)
+    } else if (dx > 0 && idx >= len - 1) {
+      setTrendingTransition(true)
+      setTrendingSwipeX(0)
+      loadMoreTrending()
+    } else {
+      setTrendingTransition(true)
+      setTrendingSwipeX(0)
+    }
+  }, [loadMoreTrending])
+
+  const handlePlayTrending = useCallback(() => {
+    if (trending.length === 0) return
+    setQueue(trending, currentTrendingIndex)
+    setPlayerExpanded(true)
+  }, [trending, currentTrendingIndex, setQueue, setPlayerExpanded])
+
+  const currentTrackInstance = usePlayerStore(s => s.currentTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
 
   const handleShare = useCallback(async (track) => {
     const shareTitle = `${track.title || 'Unknown'} - VDK`
@@ -83,6 +197,12 @@ export default function LibraryPage() {
     setNewName('')
     setShowNewPlaylist(false)
   }
+
+  const currentTrackData = trending[currentTrendingIndex]
+  const isCurrentPlaying = currentTrackData && currentTrackInstance?.id === currentTrackData.id && isPlaying
+
+  const dotsCount = Math.min(trending.length, 7)
+  const hasMoreDots = trending.length > 7
 
   return (
     <div className="min-h-full" style={{ animation: 'pageEnter 0.3s ease-out forwards' }}>
@@ -114,9 +234,9 @@ export default function LibraryPage() {
           <span className="flex-1 h-[2px] rounded-full" style={{ background: 'linear-gradient(270deg, transparent, #aed366)' }} />
         </div>
 
-        {/* ── Your Songs ───────────────────────────────────────────────── */}
-        <div ref={sectionRef} className="mb-8">
-          <div className="flex items-center justify-between">
+        {/* ── Trending Carousel ─────────────────────────────────────────── */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-[20px] font-bold font-syne flex items-center gap-2"
               style={{
                 background: 'linear-gradient(135deg, #e2e3e0, #ffffff)',
@@ -125,109 +245,170 @@ export default function LibraryPage() {
                 backgroundClip: 'text',
               }}
             >
-              <span className="material-symbols-outlined text-primary-fixed-dim text-[22px]" style={{ fontVariationSettings: "'FILL' 1", WebkitTextFillColor: '#aed366' }}>library_music</span>
-              Your Songs
-              <span className="text-[13px] text-on-surface-variant/40 font-inter font-normal ml-1" style={{ WebkitTextFillColor: 'rgba(196,201,181,0.4)' }}>({library.length})</span>
-            </h2>
-            <div className="flex items-center gap-2">
-              {library.length > 1 && (
-                <button onClick={handleShuffleAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] text-primary-fixed-dim font-medium transition-all hover:bg-primary-fixed-dim/15 active:scale-95">
-                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>shuffle</span>
-                  Shuffle
-                </button>
+              <span className="text-[20px]" style={{ WebkitTextFillColor: '#aed366' }}>🔥</span>
+              Trending
+              {trending.length > 0 && (
+                <span className="text-[13px] text-on-surface-variant/40 font-inter font-normal ml-1" style={{ WebkitTextFillColor: 'rgba(196,201,181,0.4)' }}>
+                  ({currentTrendingIndex + 1}/{trending.length})
+                </span>
               )}
-              <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.aac,.m4a" onChange={onFileInputChange} className="hidden" multiple />
-              <button onClick={openFilePicker} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] text-primary-fixed-dim font-medium transition-all hover:bg-primary-fixed-dim/15 active:scale-95">
-                <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
-                Upload
-              </button>
-            </div>
+            </h2>
+            <button
+              onClick={fetchTrending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] text-primary-fixed-dim font-medium transition-all hover:bg-primary-fixed-dim/15 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>refresh</span>
+              Refresh
+            </button>
           </div>
 
-          {/* Section divider */}
-          <div className="mb-5 mt-1" style={{ height: '1px', background: 'linear-gradient(90deg, rgba(174,211,102,0.2), rgba(174,211,102,0.05), transparent)' }} />
-
-          {library.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-4">library_music</span>
-              <p className="text-on-surface-variant/50 font-inter text-[15px]">No songs yet</p>
-              <p className="text-on-surface-variant/30 font-inter text-[13px] mt-1">Upload your first track to get started</p>
+          {/* Card area */}
+          {trendingLoading ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div
+                className="w-full max-w-[320px] aspect-square rounded-2xl bg-surface-variant/20 animate-pulse"
+                style={{ boxShadow: '0 0 30px -10px rgba(174,211,102,0.08)' }}
+              />
+              <div className="h-4 w-32 rounded-full bg-surface-variant/20 animate-pulse" />
+              <div className="h-3 w-24 rounded-full bg-surface-variant/15 animate-pulse" />
             </div>
-          )}
+          ) : trendingError ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-4">cloud_off</span>
+              <p className="text-on-surface-variant/50 font-inter text-[15px] mb-1">{trendingError}</p>
+              <p className="text-on-surface-variant/30 font-inter text-[13px] mb-4">{(isOnline === false) ? 'Connect to the internet to explore' : ''}</p>
+              <button
+                onClick={fetchTrending}
+                className="px-5 py-2 rounded-xl text-[13px] font-medium font-inter text-primary-fixed-dim transition-all active:scale-95"
+                style={{ background: 'rgba(174,211,102,0.1)', border: '1px solid rgba(174,211,102,0.2)' }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : trending.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 mb-4">explore</span>
+              <p className="text-on-surface-variant/50 font-inter text-[15px]">No recommendations available</p>
+              <p className="text-on-surface-variant/30 font-inter text-[13px] mt-1">Try again later</p>
+            </div>
+          ) : (
+            <>
+              {/* Swipeable card */}
+              <div
+                className="w-full flex justify-center select-none"
+                style={{ touchAction: 'pan-y' }}
+              >
+                <div
+                  ref={cardRef}
+                  className="relative w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden cursor-pointer active:cursor-grabbing"
+                  style={{
+                    transform: `translateX(${trendingSwipeX}px) rotate(${trendingSwipeX * 0.008}deg)`,
+                    transition: trendingTransition
+                      ? 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)'
+                      : 'none',
+                    boxShadow: trendingIsSwiping
+                      ? '0 8px 40px -8px rgba(0,0,0,0.5)'
+                      : '0 4px 24px -8px rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(68,73,57,0.15)',
+                  }}
+                  onTouchStart={handleTrendingTouchStart}
+                  onTouchMove={handleTrendingTouchMove}
+                  onTouchEnd={handleTrendingTouchEnd}
+                  onClick={handlePlayTrending}
+                >
+                  <img
+                    src={currentTrackData?.cover || DEFAULT_COVER}
+                    alt={currentTrackData?.title || ''}
+                    className="w-full h-full object-cover"
+                    onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }}
+                    draggable={false}
+                  />
 
-          {library.length > 0 && (
-            <div className="space-y-px max-h-[400px] overflow-y-auto hide-scrollbar snap-scroll rounded-2xl">
-              {displaySongs.map((track, i) => {
-                const isActive = currentTrack?.id === track.id
-                const isMenuOpen = menuTrackId === track.id
-                return (
+                  {/* Gradient overlay */}
                   <div
-                    key={track.id}
-                    ref={el => songRefs.current[i] = el}
-                    className="song-enter group relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer active:scale-[0.99] transition-all"
-                    style={{
-                      background: isActive
-                        ? 'linear-gradient(135deg, rgba(174,211,102,0.12), rgba(174,211,102,0.04))'
-                        : 'transparent',
-                      borderLeft: isActive ? '3px solid #aed366' : '3px solid transparent',
-                      boxShadow: isActive ? '0 0 24px -8px rgba(174,211,102,0.15)' : 'none',
-                      opacity: 1,
-                      transform: 'translateY(0)',
-                      transition: `opacity 0.4s ease-out ${i * 0.04}s, transform 0.4s ease-out ${i * 0.04}s, background 0.2s, box-shadow 0.2s`,
-                    }}
-                    onMouseOver={e => { if (!isActive) e.currentTarget.style.background = 'rgba(30,32,31,0.6)' }}
-                    onMouseOut={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
-                    onClick={() => handlePlay(i)}
+                    className="absolute inset-x-0 bottom-0 h-[45%]"
+                    style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}
+                  />
+
+                  {/* Play indicator */}
+                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
                   >
-                    <span className="w-7 text-center text-[13px] text-on-surface-variant/50 font-mono flex-shrink-0 group-hover:hidden font-semibold">
-                      {isActive ? (
-                        <span className="material-symbols-outlined text-primary-fixed-dim text-[20px]" style={{ fontVariationSettings: "'FILL' 1", filter: 'drop-shadow(0 0 6px rgba(174,211,102,0.5))' }}>equalizer</span>
-                      ) : i + 1}
+                    <span className="material-symbols-outlined text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {isCurrentPlaying ? 'equalizer' : 'play_arrow'}
                     </span>
-                    <span className="w-7 text-center hidden group-hover:flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[20px] text-primary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1", filter: 'drop-shadow(0 0 6px rgba(174,211,102,0.4))' }}>play_arrow</span>
-                    </span>
+                  </div>
 
-                    <img src={track.cover || DEFAULT_COVER} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0 bg-surface-variant ring-1 ring-white/5 group-hover:ring-primary-fixed-dim/20 transition-all" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
-
-                    <div className="flex-grow min-w-0">
-                      <p className="text-[16px] font-semibold truncate font-inter" style={{ color: isActive ? '#c9f07e' : '#ffffff' }}>
-                        {track.title || 'Unknown Track'}
-                      </p>
-                      <p className="text-[13px] text-on-surface-variant/70 truncate font-inter">{track.artist || 'Unknown Artist'}</p>
-                    </div>
-
-                    <span className="text-[13px] text-on-surface-variant/50 font-mono flex-shrink-0 w-11 text-right font-medium">
-                      {track.duration ? `${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2, '0')}` : '--:--'}
-                    </span>
-
-                    {/* Track three-dot */}
-                    <div className="relative flex-shrink-0">
-                      <button
-                        onClick={e => { e.stopPropagation(); setMenuTrackId(isMenuOpen ? null : track.id) }}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg transition-all text-on-surface-variant/40"
-                        style={{ background: isMenuOpen ? 'rgba(174,211,102,0.1)' : 'transparent' }}
-                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(174,211,102,0.08)'; e.currentTarget.style.color = '#c9f07e' }}
-                        onMouseOut={e => { if (!isMenuOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '' } }}
-                      >
-                        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>more_vert</span>
-                      </button>
+                  {/* Track info overlay */}
+                  <div className="absolute inset-x-0 bottom-0 p-5 pb-5">
+                    <p className="text-[17px] font-bold font-syne text-white truncate drop-shadow-lg">
+                      {currentTrackData?.title || 'Unknown'}
+                    </p>
+                    <p className="text-[13px] font-inter text-white/70 truncate mt-0.5 drop-shadow-md">
+                      {currentTrackData?.artist || 'Unknown Artist'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {currentTrackData?._language && (
+                        <span className="text-[10px] font-inter px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                          {currentTrackData._language}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-inter px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                        {currentTrackData?.duration
+                          ? `${Math.floor(currentTrackData.duration / 60)}:${String(Math.floor(currentTrackData.duration % 60)).padStart(2, '0')}`
+                          : '--:--'}
+                      </span>
                     </div>
                   </div>
-                )
-              })}
-              {sorted.length > 5 && (
-                <button
-                  onClick={() => setShowAllSongs(!showAllSongs)}
-                  className="w-full text-left px-3 py-3 text-[13px] font-semibold font-inter transition-all rounded-xl"
-                  style={{ color: '#aed366', scrollSnapAlign: 'none' }}
-                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(174,211,102,0.08)'; e.currentTarget.style.color = '#c9f07e' }}
-                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#aed366' }}
-                >
-                  {showAllSongs ? 'Show less ↑' : `Show all ${sorted.length} songs →`}
-                </button>
+                </div>
+              </div>
+
+              {/* Dots indicator */}
+              <div className="flex items-center justify-center gap-1.5 mt-5 mb-1">
+                {Array.from({ length: dotsCount }).map((_, i) => (
+                  <button
+                    key={i}
+                    className="rounded-full transition-all"
+                    style={{
+                      width: i === currentTrendingIndex ? 24 : 6,
+                      height: 6,
+                      background: i === currentTrendingIndex
+                        ? 'linear-gradient(90deg, #aed366, #c9f07e)'
+                        : 'rgba(174,211,102,0.2)',
+                    }}
+                    onClick={() => setCurrentTrendingIndex(i)}
+                  />
+                ))}
+                {hasMoreDots && (
+                  <span className="text-[11px] text-on-surface-variant/40 font-inter ml-1">
+                    +{trending.length - 7}
+                  </span>
+                )}
+              </div>
+
+              {/* Swipe hint / load more */}
+              {currentTrendingIndex >= trending.length - 1 && trendingLoadingMore && (
+                <div className="flex items-center justify-center gap-2 mt-3 text-on-surface-variant/40">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">autorenew</span>
+                  <span className="text-[12px] font-inter">Finding more...</span>
+                </div>
               )}
-            </div>
+              {currentTrendingIndex >= trending.length - 1 && trendingNoMore && (
+                <p className="text-center mt-3 text-[12px] text-on-surface-variant/30 font-inter">
+                  You've seen them all
+                </p>
+              )}
+              {currentTrendingIndex >= trending.length - 1 && !trendingLoadingMore && !trendingNoMore && trending.length > 0 && (
+                <p className="text-center mt-3 text-[12px] text-on-surface-variant/30 font-inter">
+                  Swipe right for more
+                </p>
+              )}
+              {currentTrendingIndex < trending.length - 1 && (
+                <p className="text-center mt-3 text-[12px] text-on-surface-variant/20 font-inter">
+                  Swipe to browse  ·  Tap to play
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -339,7 +520,6 @@ export default function LibraryPage() {
                       <p className="text-[11px] text-on-surface-variant/50 font-inter">{playlist.tracks?.length || 0} tracks</p>
                     </div>
 
-                    {/* Playlist three-dot */}
                     <div className="relative flex-shrink-0">
                       <button
                         onClick={e => { e.stopPropagation(); setPlaylistMenuId(isMenuOpen ? null : playlist.id) }}
@@ -492,7 +672,6 @@ export default function LibraryPage() {
                 style={{ background: 'rgba(30, 32, 31, 0.98)', backdropFilter: 'blur(20px)', border: '1px solid rgba(68, 73, 57, 0.25)' }}
                 onClick={e => e.stopPropagation()}
               >
-                {/* Track info header */}
                 <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'rgba(68, 73, 57, 0.2)' }}>
                   <img src={track.cover || DEFAULT_COVER} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-surface-variant" onError={e => { if (e.target.src !== DEFAULT_COVER) e.target.src = DEFAULT_COVER }} />
                   <div className="flex-grow min-w-0">
@@ -504,7 +683,6 @@ export default function LibraryPage() {
                   </button>
                 </div>
 
-                {/* Action buttons */}
                 <div className="py-2">
                   <button onClick={() => { toggleLike(track.id); setMenuTrackId(null) }}
                     className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors text-left"

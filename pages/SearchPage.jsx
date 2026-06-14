@@ -3,6 +3,7 @@ import usePlayerStore from '../store/playerStore'
 import { formatTime, DEFAULT_COVER } from '../utils/audioUtils'
 import { searchOnlineSongs, getRecommendations } from '../utils/jiosaavnApi'
 import useOnlineStatus from '../hooks/useOnlineStatus'
+import { useFileUpload } from '../hooks/useFileUpload'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
@@ -62,6 +63,7 @@ export default function SearchPage() {
   }, [])
 
   const isOnline = useOnlineStatus()
+  const { openFilePicker, onFileInputChange, fileInputRef } = useFileUpload()
 
   useEffect(() => {
     if (isOnline && mode === 'online' && !query.trim()) {
@@ -414,6 +416,25 @@ export default function SearchPage() {
                 </div>
               </section>
             )}
+          </>
+        )}
+
+        {/* ── FAB Upload (My Library mode) ── */}
+        {mode === 'local' && (
+          <>
+            <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.aac,.m4a" onChange={onFileInputChange} className="hidden" multiple />
+            <button
+              onClick={openFilePicker}
+              className="fixed z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all hover:shadow-lg hover:shadow-[#aed366]/20"
+              style={{
+                bottom: '156px',
+                right: '20px',
+                background: 'linear-gradient(135deg, #aed366, #c9f07e)',
+                boxShadow: '0 4px 20px -4px rgba(174,211,102,0.4)',
+              }}
+            >
+              <span className="material-symbols-outlined text-[28px] text-[#141f00]" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
+            </button>
           </>
         )}
       </div>

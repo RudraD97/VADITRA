@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 
-<html class="dark" lang="en"><head>
+<html class="dark" lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>VADITRA - Playlist View</title>
@@ -113,7 +114,7 @@ body {
     inset: 0;
     z-index: 9999;
     opacity: 0.03;
-    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAd88B70AuUuPUHSDkWTzSpellRNNvV0nUHjuxyXpM3ogWyknmR5utVAqu9909SjDUC6uWbd8cEmbzqshEAaqaVhcqPyai7bSrpgdR4SWvs90qP_hNKnOTbMFW7tk0EwuLc6D2mPKq4fsePIQ5GehmTeIPddNfZ0coe9mATerLWZXHpEkynvRYyhOxUotzkDdPRvDVaixgX1zxmLMT22oECS2o2-1mDMO7lbeocita-HY3eerrgA0Sn3_ENFb1SWuWL1Dnhv6sZJAkB);
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAd88B70AuUuPUHSDkWTzSpellRNNvV0nUHjuxyXpM3ogWyknmR5utVAqu9909SjDUC6uWbd8cEmbzqshEAaqaVhcqPyai7bSrpgdR4SWvs90qP_hNKnOTbMFW7tk0EwuLc6D2mPKq4fsePIQ5GehmTeIPddNfZ0coe9mATerLWZXHpEkynvRYyhOxUotzkDdPRvDVaixgX1zxmLMT22oECS2o2-1mDMO7lbeocita-HY3eerrgA0Sn3_ENFb1SWuWL1Dnhv6sZJAkB");
 }
 .active-row-glow {
     box-shadow: -16px 0 32px -12px rgba(201, 240, 126, 0.15);
@@ -175,7 +176,8 @@ body {
 <!-- Track 1: Active -->
 <div class="group relative flex items-center justify-between p-5 md:p-8 rounded-xl bg-surface-container-high border-l-4 border-primary-fixed active-row-glow transition-all duration-300">
 <div class="flex items-center gap-6 flex-1">
-<span class="material-symbols-outlined text-primary-fixed text-lg" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+<span class="font-label-md text-label-md text-on-surface-variant/40 w-5 hidden">01</span>
+<span class="material-symbols-outlined text-primary-fixed text-lg cursor-pointer w-5" style="font-variation-settings: 'FILL' 1;">equalizer</span>
 <div class="flex flex-col gap-0.5">
 <span class="font-headline-md text-headline-md text-primary-fixed leading-none">Prism Layers</span>
 <span class="font-label-md text-label-md text-on-surface-variant md:hidden">Kåre Valen</span>
@@ -289,7 +291,7 @@ body {
 </section>
 </main>
 <!-- Mini Player -->
-<div class="fixed bottom-[80px] left-margin-mobile right-margin-mobile z-40 h-16 bg-surface-container-highest/90 backdrop-blur-2xl border border-outline-variant/20 rounded-xl flex items-center px-4 gap-4 shadow-2xl">
+<div class="fixed bottom-[80px] left-[24px] right-[24px] z-40 h-16 bg-surface-container-highest/90 backdrop-blur-2xl border border-outline-variant/20 rounded-xl flex items-center px-4 gap-4 shadow-2xl">
 <img alt="Current Track" class="w-11 h-11 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD3dznbXgsjtMSJA0stbKpUfyHUNde4U4W8kOKDovzvZApSYpZYhQzHLFJ7Gm0vcflkjn-GCIk-FWPWT2HOH6HyTfQDynxz_9HIooxNcbVLGVw-Y-fQWoHLYBVju7VoC-O3kjGWTLS3Jm-pKkofOFjHB2WpAcyYXy-R_6Yi3l8SL_Qk6DpI1V7ept2QANDUB0SbdnH5VtJCPYu9oewvHl8Hkm1r__Zpjs_2ZQ90m93vDdhjxA9Dex3tcwVMbLKvWzz71kxadyivEO_"/>
 <div class="flex-1 overflow-hidden">
 <h4 class="font-label-md text-label-md text-primary-fixed truncate">Prism Layers</h4>
@@ -311,7 +313,7 @@ body {
 </div>
 </div>
 <!-- Bottom Navigation Bar -->
-<nav class="fixed bottom-0 w-full z-50 h-nav-height bg-surface-container-lowest/98 backdrop-blur-xl border-t border-outline-variant/10 flex justify-around items-center px-gutter pb-safe">
+<nav class="fixed bottom-0 w-full z-50 h-nav-height bg-surface-container-lowest/98 backdrop-blur-xl border-t border-outline-variant/10 flex justify-around items-center px-gutter pb-[env(safe-area-inset-bottom)]">
 <a class="flex flex-col items-center justify-center text-primary-fixed after:content-[''] after:w-1 after:h-1 after:bg-primary-fixed after:rounded-full after:mt-1 hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
 <span class="material-symbols-outlined text-2xl">library_music</span>
 </a>
@@ -326,34 +328,61 @@ body {
 </a>
 </nav>
 <script>
+    /* global document, window */
     // Micro-interactions for tracks
-    document.querySelectorAll('section > div.group').forEach(row => {
+    document.querySelectorAll('section > div.group.flex').forEach(row => {
         row.addEventListener('click', () => {
             // Remove active state from all
-            document.querySelectorAll('section > div.group').forEach(r => {
+            document.querySelectorAll('section > div.group.flex').forEach(r => {
                 r.classList.remove('bg-surface-container-high', 'border-l-4', 'border-primary-fixed', 'active-row-glow');
                 const title = r.querySelector('.font-headline-md');
                 if(title) title.classList.replace('text-primary-fixed', 'text-on-surface');
-                const icon = r.querySelector('.material-symbols-outlined[style*="equalizer"]');
-                if(icon) {
-                    icon.textContent = 'play_arrow';
-                    icon.classList.replace('text-primary-fixed', 'text-on-surface-variant/40');
+
+                const iconContainer = r.querySelector('.flex.items-center.gap-6');
+                if (iconContainer) {
+                    const spans = [...iconContainer.children];
+                    const numSpan = spans.find(el => !el.classList.contains('material-symbols-outlined'));
+                    const iconSpan = spans.find(el => el.classList.contains('material-symbols-outlined'));
+                    if (numSpan) numSpan.classList.remove('hidden');
+                    if (iconSpan && iconSpan.textContent === 'equalizer') {
+                        iconSpan.textContent = 'play_arrow';
+                        iconSpan.classList.remove('text-primary-fixed');
+                        iconSpan.classList.add('text-on-surface-variant/40');
+                        iconSpan.classList.remove('text-lg');
+                        iconSpan.classList.add('text-2xl', 'hidden', 'group-hover:block');
+                    }
                 }
             });
-            
+
             // Add active state to clicked
             row.classList.add('bg-surface-container-high', 'border-l-4', 'border-primary-fixed', 'active-row-glow');
             row.querySelector('.font-headline-md')?.classList.replace('text-on-surface', 'text-primary-fixed');
+
+            const iconContainer = row.querySelector('.flex.items-center.gap-6');
+            if (iconContainer) {
+                const spans = [...iconContainer.children];
+                const numSpan = spans.find(el => !el.classList.contains('material-symbols-outlined'));
+                const iconSpan = spans.find(el => el.classList.contains('material-symbols-outlined'));
+                if (numSpan) numSpan.classList.add('hidden');
+                if (iconSpan) {
+                    iconSpan.textContent = 'equalizer';
+                    iconSpan.classList.remove('text-on-surface-variant/40');
+                    iconSpan.classList.add('text-primary-fixed');
+                    iconSpan.classList.remove('text-2xl', 'hidden', 'group-hover:block');
+                    iconSpan.classList.add('text-lg');
+                }
+            }
         });
     });
 
     // Atmospheric parallax on scroll
     window.addEventListener('scroll', () => {
         const headerImg = document.querySelector('section img');
-        const scrolled = window.pageYOffset;
+        const scrolled = window.scrollY;
         if(headerImg) {
             headerImg.style.transform = `translateY(${scrolled * 0.05}px)`;
         }
     });
 </script>
-</body></html>
+</body>
+</html>
