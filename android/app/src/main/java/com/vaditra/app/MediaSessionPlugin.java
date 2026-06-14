@@ -155,14 +155,39 @@ public class MediaSessionPlugin extends Plugin {
         String title = call.getString("title", "");
         String artist = call.getString("artist", "");
         String album = call.getString("album", "");
+        String artworkUrl = call.getString("artwork", "");
 
+        // Set metadata immediately without artwork so title/artist show right away
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
         builder.putString(MediaMetadata.METADATA_KEY_TITLE, title);
         builder.putString(MediaMetadata.METADATA_KEY_ARTIST, artist);
         builder.putString(MediaMetadata.METADATA_KEY_ALBUM, album);
-
         mediaSession.setMetadata(builder.build());
         call.resolve();
+
+        // Load artwork asynchronously and update metadata once loaded
+        if (artworkUrl != null && !artworkUrl.isEmpty()) {
+            final String finalTitle = title;
+            final String finalArtist = artist;
+            final String finalAlbum = album;
+            new Thread(() -> {
+                try {
+                    java.net.URL url = new java.net.URL(artworkUrl);
+                    android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(url.openStream());
+                    if (bitmap != null && mediaSession != null) {
+                        MediaMetadata withArt = new MediaMetadata.Builder()
+                            .putString(MediaMetadata.METADATA_KEY_TITLE, finalTitle)
+                            .putString(MediaMetadata.METADATA_KEY_ARTIST, finalArtist)
+                            .putString(MediaMetadata.METADATA_KEY_ALBUM, finalAlbum)
+                            .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
+                            .build();
+                        mediaSession.setMetadata(withArt);
+                    }
+                } catch (Exception e) {
+                    android.util.Log.w("MediaSessionPlugin", "Artwork load failed: " + e.getMessage());
+                }
+            }).start();
+        }
     }
 
     @PluginMethod

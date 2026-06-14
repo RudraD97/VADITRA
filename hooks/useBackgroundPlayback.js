@@ -184,6 +184,7 @@ export function useBackgroundPlayback(audioRef) {
             title: track.title || '',
             artist: track.artist || '',
             album: track.album || '',
+            artwork: track.cover || '',
           }).catch((e) => warn('Native MetaData update failed:', e))
         }
         MediaSessionNative.setPlaying({ playing })
